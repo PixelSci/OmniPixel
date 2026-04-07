@@ -37,6 +37,31 @@ importers:
         specifier: ^3.2.6
         version: 3.2.6(typescript@6.0.2)
 
+  apps/omni-pixel:
+    dependencies:
+      vue:
+        specifier: ^3.5.32
+        version: 3.5.32(typescript@6.0.2)
+    devDependencies:
+      '@types/node':
+        specifier: ^24.12.2
+        version: 24.12.2
+      '@vitejs/plugin-vue':
+        specifier: ^6.0.5
+        version: 6.0.5(vite@8.0.5(@emnapi/core@1.9.2)(@emnapi/runtime@1.9.2)(@types/node@24.12.2)(yaml@2.8.3))(vue@3.5.32(typescript@6.0.2))
+      '@vue/tsconfig':
+        specifier: ^0.9.1
+        version: 0.9.1(typescript@6.0.2)(vue@3.5.32(typescript@6.0.2))
+      typescript:
+        specifier: ~6.0.2
+        version: 6.0.2
+      vite:
+        specifier: ^8.0.4
+        version: 8.0.5(@emnapi/core@1.9.2)(@emnapi/runtime@1.9.2)(@types/node@24.12.2)(yaml@2.8.3)
+      vue-tsc:
+        specifier: ^3.2.6
+        version: 3.2.6(typescript@6.0.2)
+
 packages:
 
   '@antfu/eslint-config@8.0.0':
