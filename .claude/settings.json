@@ -1,6 +1,6 @@
 {
-  "enabledPlugins": {
-    "git@pkc918": true,
-    "developer@pkc918": true
-  }
+    "enabledPlugins": {
+        "git@pkc918": true,
+        "developer@pkc918": true
+    }
 }
