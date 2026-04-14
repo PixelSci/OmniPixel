@@ -1,9 +1,7 @@
 <script setup lang="ts">
-import { Button } from '@/components/ui/button'
+import { MacosMenuBar } from '@/components/ui/macos-menu-bar'
 </script>
 
 <template>
-    <Button>
-        Secondary
-    </Button>
+    <MacosMenuBar app-name="OmniPixel" />
 </template>
