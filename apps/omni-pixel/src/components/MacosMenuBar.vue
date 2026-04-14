@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useNow } from '@vueuse/core'
+import { Battery, Search, Sun, Volume2, Wifi } from 'lucide-vue-next'
 import { computed } from 'vue'
-import { Wifi, Volume2, Battery, Search, Sun } from 'lucide-vue-next'
 
 interface MenuItem {
     label: string
@@ -64,12 +64,12 @@ const dateStr = computed(() =>
             <button
                 class="inline-flex h-[22px] cursor-default items-center rounded px-2 text-[13px] font-semibold tracking-tight text-foreground transition-colors duration-100 hover:bg-[var(--hig-fill)]"
             >
-                {{ appName }}
+                {{ props.appName }}
             </button>
 
             <!-- Menu items -->
             <button
-                v-for="item in menuItems"
+                v-for="item in props.menuItems"
                 :key="item.label"
                 class="inline-flex h-[22px] cursor-default items-center rounded px-2 text-[13px] text-foreground transition-colors duration-100 hover:bg-[var(--hig-fill)]"
                 :class="item.disabled ? 'pointer-events-none opacity-40' : ''"
