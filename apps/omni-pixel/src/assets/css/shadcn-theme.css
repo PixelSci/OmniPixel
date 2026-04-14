@@ -77,6 +77,25 @@
         -webkit-backdrop-filter: var(--hig-glass-blur);
     }
 
+    /* Liquid glass: multi-layer vibrancy material matching macOS 26 HIG */
+    .hig-liquid-glass {
+        box-shadow:
+            0 0 2px rgba(0, 0, 0, 0.10),
+            0 0 25px rgba(0, 0, 0, 0.16),
+            inset 0 1px 0 rgba(255, 255, 255, 0.82),
+            inset 0 -0.5px 0 rgba(0, 0, 0, 0.05),
+            inset 0 0 0 0.5px rgba(255, 255, 255, 0.45);
+    }
+
+    .dark .hig-liquid-glass {
+        box-shadow:
+            0 0 2px rgba(0, 0, 0, 0.36),
+            0 0 28px rgba(0, 0, 0, 0.52),
+            inset 0 1px 0 rgba(255, 255, 255, 0.18),
+            inset 0 -0.5px 0 rgba(0, 0, 0, 0.24),
+            inset 0 0 0 0.5px rgba(255, 255, 255, 0.12);
+    }
+
     [data-slot="button"][data-variant="outline"],
     [data-slot="button"][data-variant="secondary"],
     [data-slot="button"][data-variant="ghost"],
