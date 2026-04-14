@@ -1,7 +1,8 @@
 {
-  "enabledPlugins": {
-    "git@pkc918": true,
-    "developer@pkc918": true,
-    "vueuse-functions@vueuse-skills": true
-  }
+    "enabledPlugins": {
+        "git@pkc918": true,
+        "developer@pkc918": true,
+        "vueuse-functions@vueuse-skills": true,
+        "figma@claude-plugins-official": true
+    }
 }
