@@ -5,10 +5,10 @@ import {
     Image,
     Layers,
     Music,
+    PanelLeft,
     Settings,
     Sparkles,
     Type,
-    PanelLeft,
 } from 'lucide-vue-next'
 import { cn } from '@/lib/utils'
 

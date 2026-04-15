@@ -2,9 +2,9 @@
 import { useDark, useNow, useToggle } from '@vueuse/core'
 import { Moon, Sun, Volume2 } from 'lucide-vue-next'
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import logo from '@/assets/logo.svg'
 import HigBox from '@/components/HigBox.vue'
 import { Button } from '@/components/ui/button'
-import logo from '@/assets/logo.svg'
 
 interface Props {
     appName?: string
