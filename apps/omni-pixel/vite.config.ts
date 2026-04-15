@@ -13,7 +13,7 @@ export default defineConfig({
         AutoImport({
             dts: true,
             dirs: [
-                '/src/composables',
+                './src/composables',
             ],
         }),
         Components({
