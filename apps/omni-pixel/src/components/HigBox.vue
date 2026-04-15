@@ -10,7 +10,7 @@ const props = withDefaults(defineProps<Props>(), {
 
 <template>
     <div
-        class="relative inline-block rounded-xl overflow-hidden shadow-[0px_0px_2px_0px_rgba(0,0,0,0.10),0px_0px_25px_0px_rgba(0,0,0,0.16)]"
+        class="relative inline-block rounded-xl overflow-hidden shadow-[0px_0px_2px_0px_rgba(255,255,255,0.10),0px_0px_25px_0px_rgba(0,0,0,0.16)]"
     >
         <!-- backdrop blur -->
         <div class="absolute inset-0 pointer-events-none backdrop-blur-[28px] saturate-180" aria-hidden="true" />
