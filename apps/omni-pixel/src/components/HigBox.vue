@@ -19,7 +19,7 @@ const props = withDefaults(defineProps<Props>(), {
         <!-- translucent fill -->
         <div class="absolute inset-0 pointer-events-none bg-[rgba(250,250,252,0.86)] dark:bg-[rgba(44,44,46,0.78)]" aria-hidden="true" />
         <!-- content -->
-        <div class="relative" :class="props.padding && 'p-4'">
+        <div class="relative w-full h-full" :class="props.padding && 'p-2'">
             <slot />
         </div>
     </div>

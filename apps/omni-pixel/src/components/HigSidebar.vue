@@ -4,13 +4,11 @@ import {
     Film,
     Image,
     Layers,
-    MoreHorizontal,
     Music,
-    Plus,
-    Search,
     Settings,
     Sparkles,
     Type,
+    PanelLeft,
 } from 'lucide-vue-next'
 import { cn } from '@/lib/utils'
 
@@ -72,12 +70,9 @@ const props = withDefaults(defineProps<Props>(), {
         <div class="pointer-events-none absolute inset-0 -z-10 bg-[linear-gradient(105deg,rgba(255,255,255,0.62)_0%,rgba(255,255,255,0.22)_42%,rgba(255,255,255,0.06)_72%,rgba(255,255,255,0.02)_100%)] dark:bg-[linear-gradient(105deg,rgba(255,255,255,0.14)_0%,rgba(255,255,255,0.05)_45%,rgba(255,255,255,0.02)_100%)]" aria-hidden="true" />
         <div class="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(120%_80%_at_0%_0%,rgba(255,255,255,0.55),transparent_55%)] opacity-80 dark:bg-[radial-gradient(120%_80%_at_0%_0%,rgba(255,255,255,0.12),transparent_55%)] dark:opacity-100" aria-hidden="true" />
 
-        <header class="flex h-[84px] shrink-0 flex-col justify-end gap-3 px-3 pb-3 pt-3">
-            <div class="flex h-3 items-center gap-2.5 px-1">
-                <span class="size-3 rounded-full bg-[#ff5f57] shadow-[inset_0_0_0_0.5px_rgba(0,0,0,0.18),0_0.5px_1px_rgba(0,0,0,0.12)]" />
-                <span class="size-3 rounded-full bg-[#ffbd2e] shadow-[inset_0_0_0_0.5px_rgba(0,0,0,0.16),0_0.5px_1px_rgba(0,0,0,0.10)]" />
-                <span class="size-3 rounded-full bg-[#28c840] shadow-[inset_0_0_0_0.5px_rgba(0,0,0,0.16),0_0.5px_1px_rgba(0,0,0,0.10)]" />
-            </div>
+        <header class="flex shrink-0 justify-between items-center gap-3 px-3 pb-3 pt-3">
+            <HigTrafficLights />
+            <PanelLeft class="size-4" />
         </header>
     </aside>
 </template>
