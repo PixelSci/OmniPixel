@@ -84,7 +84,7 @@ function toggleVoice() {
 
 <template>
     <div class="w-full px-4 pb-4 pt-2">
-        <div class="mx-auto w-full max-w-2xl">
+        <div class="mx-auto w-full max-w-1/2">
             <!-- input pill -->
             <div
                 class="hig-liquid-glass relative flex flex-col rounded-[18px] border border-[rgba(0,0,0,0.08)] bg-white/70 backdrop-blur-[28px] backdrop-saturate-180 dark:border-[rgba(255,255,255,0.12)] dark:bg-[rgba(44,44,46,0.62)]"
