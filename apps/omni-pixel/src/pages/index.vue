@@ -42,7 +42,7 @@ function handleStop() {
                     <div v-if="!activeSessionId" class="flex flex-1 items-center justify-center text-[var(--hig-secondary-label)] text-[13px]">
                         Select or start a new chat
                     </div>
-                    <div v-else class="mx-auto flex w-full max-w-1/2 flex-col gap-5 px-4">
+                    <div v-else class="mx-auto flex w-full max-w-3/5 flex-col gap-5 px-4">
                         <HigUserMessage content="What is the best way to share state between components in Vue 3?" />
                         <HigAssistantMessage
                             model="Claude Sonnet 4"

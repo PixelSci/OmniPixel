@@ -178,17 +178,6 @@ onBeforeUnmount(() => {
                 </template>
             </div>
 
-            <div class="pointer-events-none absolute top-0 left-1/2 flex h-7 -translate-x-1/2 items-center">
-                <div
-                    class="pointer-events-auto flex min-w-20 items-center justify-center gap-[5px] rounded-full px-3.5 h-[22px] bg-foreground shadow-[0_1px_3px_rgba(0,0,0,0.28),inset_0_1px_0_rgba(255,255,255,0.10)] transition-[min-width] duration-300 ease-[var(--ease-default)]"
-                >
-                    <slot>
-                        <span class="block size-[5px] rounded-full bg-[var(--hig-secondary-label)] opacity-50" />
-                        <span class="block size-[5px] rounded-full bg-[var(--hig-secondary-label)] opacity-50" />
-                    </slot>
-                </div>
-            </div>
-
             <div class="flex flex-1 items-center justify-end">
                 <Button
                     variant="ghost"
