@@ -98,7 +98,6 @@
 
     [data-slot="button"][data-variant="outline"],
     [data-slot="button"][data-variant="secondary"],
-    [data-slot="button"][data-variant="ghost"],
     [data-slot="accordion-trigger"],
     [data-slot="accordion-content"] {
         backdrop-filter: var(--hig-glass-blur);
