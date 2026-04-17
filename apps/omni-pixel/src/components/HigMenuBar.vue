@@ -4,6 +4,7 @@ import { Moon, Sun, Volume2 } from 'lucide-vue-next'
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import logo from '@/assets/logo.svg'
 import HigBox from '@/components/HigBox.vue'
+import HigSheet from '@/components/HigSheet.vue'
 import { Button } from '@/components/ui/button'
 
 interface Props {
@@ -58,9 +59,32 @@ const imageSubItems: SubItem[] = [
     { type: 'item', label: 'Convert Format...' },
 ]
 
+// ── Logo submenu ────────────────────────────────────────────────────────
+type LogoAction = 'profile' | 'models' | 'logout'
+type LogoSubItem =
+    | { type: 'item', label: string, action: LogoAction }
+    | { type: 'separator' }
+
+const logoSubItems: LogoSubItem[] = [
+    { type: 'item', label: '个人中心', action: 'profile' },
+    { type: 'item', label: '模型设置', action: 'models' },
+    { type: 'separator' },
+    { type: 'item', label: '退出登录', action: 'logout' },
+]
+
+const settingsOpen = ref(false)
+
+function handleLogoAction(action: LogoAction) {
+    closeMenus()
+    if (action === 'profile')
+        settingsOpen.value = true
+}
+
 const imageMenuOpen = ref(false)
+const logoMenuOpen = ref(false)
 const menuBarEl = ref<HTMLElement | null>(null)
 const imageMenuLeft = ref(0)
+const logoMenuLeft = ref(0)
 const menuBarHeight = ref(32)
 let closeTimer: ReturnType<typeof setTimeout> | null = null
 
@@ -69,34 +93,52 @@ const imageMenuStyle = computed(() => ({
     top: `1px`,
 }))
 
-function updateImageMenuPosition(target: HTMLElement) {
+const logoMenuStyle = computed(() => ({
+    left: `${logoMenuLeft.value}px`,
+    top: `1px`,
+}))
+
+function menuOffsetLeft(target: HTMLElement) {
     const menuBarRect = menuBarEl.value?.getBoundingClientRect()
     const targetRect = target.getBoundingClientRect()
 
     menuBarHeight.value = menuBarRect?.height ?? menuBarHeight.value
-    imageMenuLeft.value = menuBarRect ? targetRect.left - menuBarRect.left : target.offsetLeft
+    return menuBarRect ? targetRect.left - menuBarRect.left : target.offsetLeft
 }
 
 function openImageMenu(event?: MouseEvent) {
-    keepImageMenuOpen()
+    keepMenusOpen()
 
     if (event?.currentTarget instanceof HTMLElement) {
-        updateImageMenuPosition(event.currentTarget)
+        imageMenuLeft.value = menuOffsetLeft(event.currentTarget)
     }
 
+    logoMenuOpen.value = false
     imageMenuOpen.value = true
 }
 
-function keepImageMenuOpen() {
+function openLogoMenu(event?: MouseEvent) {
+    keepMenusOpen()
+
+    if (event?.currentTarget instanceof HTMLElement) {
+        logoMenuLeft.value = menuOffsetLeft(event.currentTarget)
+    }
+
+    imageMenuOpen.value = false
+    logoMenuOpen.value = true
+}
+
+function keepMenusOpen() {
     if (closeTimer) {
         clearTimeout(closeTimer)
         closeTimer = null
     }
 }
 
-function scheduleCloseImageMenu() {
+function scheduleCloseMenus() {
     closeTimer = setTimeout(() => {
         imageMenuOpen.value = false
+        logoMenuOpen.value = false
     }, 80)
 }
 
@@ -107,6 +149,7 @@ function closeMenus() {
     }
 
     imageMenuOpen.value = false
+    logoMenuOpen.value = false
 }
 
 function handleDocumentPointerDown(event: PointerEvent) {
@@ -137,13 +180,20 @@ onBeforeUnmount(() => {
             style="z-index: 100;"
         >
             <div class="flex flex-1 items-center">
-                <Button
-                    variant="ghost"
-                    aria-label="Apple menu"
-                    class="inline-flex h-[22px] cursor-default items-center justify-center rounded px-2.5 text-foreground transition-colors duration-100 hover:bg-[var(--hig-fill)]"
+                <div
+                    class="flex h-8 items-center"
+                    @mouseenter="openLogoMenu"
+                    @mouseleave="scheduleCloseMenus"
                 >
-                    <img :src="logo" alt="logo" class="size-4">
-                </Button>
+                    <Button
+                        variant="ghost"
+                        aria-label="Apple menu"
+                        class="inline-flex h-[22px] cursor-default items-center justify-center rounded px-2.5 text-foreground transition-colors duration-100 hover:bg-[var(--hig-fill)]"
+                        :class="logoMenuOpen && 'bg-[var(--hig-fill)]'"
+                    >
+                        <img :src="logo" alt="logo" class="size-4">
+                    </Button>
+                </div>
 
                 <Button
                     variant="ghost"
@@ -157,7 +207,7 @@ onBeforeUnmount(() => {
                         v-if="item.label === 'Image'"
                         class="flex h-8 items-center"
                         @mouseenter="openImageMenu"
-                        @mouseleave="scheduleCloseImageMenu"
+                        @mouseleave="scheduleCloseMenus"
                     >
                         <Button
                             variant="ghost"
@@ -211,8 +261,8 @@ onBeforeUnmount(() => {
             :padding="false"
             class="absolute z-[1000] min-w-[180px]"
             :style="imageMenuStyle"
-            @mouseenter="keepImageMenuOpen"
-            @mouseleave="scheduleCloseImageMenu"
+            @mouseenter="keepMenusOpen"
+            @mouseleave="scheduleCloseMenus"
         >
             <div class="px-3 py-[5px]">
                 <template v-for="(sub, i) in imageSubItems" :key="i">
@@ -242,5 +292,45 @@ onBeforeUnmount(() => {
                 </template>
             </div>
         </HigBox>
+
+        <HigBox
+            v-if="logoMenuOpen"
+            :padding="false"
+            class="absolute z-[1000] min-w-[160px]"
+            :style="logoMenuStyle"
+            @mouseenter="keepMenusOpen"
+            @mouseleave="scheduleCloseMenus"
+        >
+            <div class="px-3 py-[5px]">
+                <template v-for="(sub, i) in logoSubItems" :key="i">
+                    <div
+                        v-if="sub.type === 'separator'"
+                        class="-mx-3 flex h-[11px] items-center"
+                    >
+                        <div class="h-px w-full bg-[#e6e6e6] dark:bg-[rgba(84,84,88,0.65)]" />
+                    </div>
+
+                    <button
+                        v-else
+                        class="group relative flex h-[24px] w-full cursor-default items-center outline-none"
+                        @click="handleLogoAction(sub.action)"
+                    >
+                        <span
+                            class="absolute inset-y-0 left-[-7px] right-[-7px] rounded-[8px] opacity-0 group-hover:opacity-100"
+                            aria-hidden="true"
+                        >
+                            <span class="absolute inset-0 rounded-[8px] bg-[rgba(0,0,0,0.05)]" />
+                            <span class="absolute inset-0 rounded-[8px] bg-[rgba(255,255,255,0.65)] mix-blend-color-dodge" />
+                            <span class="absolute inset-0 rounded-[8px] bg-[#0088ff]" />
+                        </span>
+                        <span class="relative text-[13px] font-[510] text-[#1a1a1a] group-hover:text-white dark:text-[rgba(235,235,245,0.9)] dark:group-hover:text-white">
+                            {{ sub.label }}
+                        </span>
+                    </button>
+                </template>
+            </div>
+        </HigBox>
+
+        <HigSheet v-model:open="settingsOpen" />
     </div>
 </template>
