@@ -4,7 +4,8 @@ import { Moon, Sun, Volume2 } from 'lucide-vue-next'
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import logo from '@/assets/logo.svg'
 import HigBox from '@/components/HigBox.vue'
-import HigSheet from '@/components/HigSheet.vue'
+import HigModelSettingsSheet from '@/components/HigModelSettingsSheet.vue'
+import HigProfileSheet from '@/components/HigProfileSheet.vue'
 import { Button } from '@/components/ui/button'
 
 interface Props {
@@ -72,12 +73,15 @@ const logoSubItems: LogoSubItem[] = [
     { type: 'item', label: '退出登录', action: 'logout' },
 ]
 
-const settingsOpen = ref(false)
+const profileOpen = ref(false)
+const modelSettingsOpen = ref(false)
 
 function handleLogoAction(action: LogoAction) {
     closeMenus()
     if (action === 'profile')
-        settingsOpen.value = true
+        profileOpen.value = true
+    else if (action === 'models')
+        modelSettingsOpen.value = true
 }
 
 const imageMenuOpen = ref(false)
@@ -331,6 +335,7 @@ onBeforeUnmount(() => {
             </div>
         </HigBox>
 
-        <HigSheet v-model:open="settingsOpen" />
+        <HigProfileSheet v-model:open="profileOpen" />
+        <HigModelSettingsSheet v-model:open="modelSettingsOpen" />
     </div>
 </template>
