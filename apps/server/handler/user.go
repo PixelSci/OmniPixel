@@ -5,9 +5,9 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 
-	"omni-pixel/internal/apperr"
-	"omni-pixel/internal/model"
-	"omni-pixel/internal/service"
+	"omni-pixel/apperr"
+	"omni-pixel/model"
+	"omni-pixel/service"
 )
 
 type UserHandler struct {

@@ -6,7 +6,7 @@ import (
 
 	"github.com/go-playground/validator/v10"
 
-	"omni-pixel/internal/apperr"
+	"omni-pixel/apperr"
 )
 
 var validate = newValidator()

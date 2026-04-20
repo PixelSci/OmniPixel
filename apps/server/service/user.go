@@ -8,9 +8,9 @@ import (
 
 	"github.com/google/uuid"
 
-	"omni-pixel/internal/apperr"
-	"omni-pixel/internal/model"
-	"omni-pixel/internal/repository"
+	"omni-pixel/apperr"
+	"omni-pixel/model"
+	"omni-pixel/repository"
 )
 
 type UserService interface {

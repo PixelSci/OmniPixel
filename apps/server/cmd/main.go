@@ -13,20 +13,52 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/recover"
 	"github.com/gofiber/fiber/v2/middleware/requestid"
 
-	"omni-pixel/internal/apperr"
-	"omni-pixel/internal/config"
-	"omni-pixel/internal/handler"
-	"omni-pixel/internal/repository"
-	"omni-pixel/internal/router"
-	"omni-pixel/internal/service"
+	"omni-pixel/apperr"
+	"omni-pixel/auth"
+	"omni-pixel/config"
+	"omni-pixel/db"
+	"omni-pixel/handler"
+	"omni-pixel/repository"
+	"omni-pixel/router"
+	"omni-pixel/service"
 )
 
 func main() {
 	cfg := config.Load()
 
-	userRepo := repository.NewInMemoryUserRepo()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	pool, err := db.NewPool(ctx, db.Config{
+		DSN:             cfg.DB.DSN,
+		MaxConns:        cfg.DB.MaxConns,
+		MinConns:        cfg.DB.MinConns,
+		MaxConnLifetime: cfg.DB.MaxConnLifetime,
+		MaxConnIdleTime: cfg.DB.MaxConnIdleTime,
+	})
+	if err != nil {
+		log.Fatalf("db connect: %v", err)
+	}
+	defer pool.Close()
+
+	if cfg.DB.AutoMigrate {
+		if err := db.Migrate(cfg.DB.DSN); err != nil {
+			log.Fatalf("db migrate: %v", err)
+		}
+		log.Println("db migrations applied")
+	}
+
+	userRepo := repository.NewPostgresUserRepo(pool)
 	userSvc := service.NewUserService(userRepo)
 	userHandler := handler.NewUserHandler(userSvc)
+
+	tokenIssuer := auth.NewTokenIssuer(cfg.Auth.JWTSecret, cfg.Auth.JWTTTL, cfg.Auth.JWTIssuer)
+	passwordProvider := auth.NewPasswordProvider(userRepo)
+	authSvc := auth.NewService(userRepo, tokenIssuer, passwordProvider)
+	// When GitHub / Google providers land, register them here:
+	//   authSvc.RegisterOAuth(github.New(cfg.Auth.GitHub))
+	//   authSvc.RegisterOAuth(google.New(cfg.Auth.Google))
+	authHandler := handler.NewAuthHandler(authSvc)
 
 	app := fiber.New(fiber.Config{
 		AppName:      "omni-pixel",
@@ -40,7 +72,7 @@ func main() {
 		}),
 	)
 
-	router.Register(app, userHandler)
+	router.Register(app, userHandler, authHandler)
 
 	go func() {
 		if err := app.Listen(cfg.Addr); err != nil {
@@ -54,9 +86,9 @@ func main() {
 	<-quit
 	log.Println("shutting down...")
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-	if err := app.ShutdownWithContext(ctx); err != nil {
+	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer shutdownCancel()
+	if err := app.ShutdownWithContext(shutdownCtx); err != nil {
 		log.Printf("shutdown error: %v", err)
 	}
 	log.Println("server stopped")

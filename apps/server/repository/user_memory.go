@@ -5,23 +5,18 @@ import (
 	"sort"
 	"sync"
 
-	"omni-pixel/internal/model"
+	"omni-pixel/model"
 )
 
-type UserRepository interface {
-	Create(ctx context.Context, u *model.User) error
-	FindByID(ctx context.Context, id string) (*model.User, error)
-	FindByEmail(ctx context.Context, email string) (*model.User, error)
-	List(ctx context.Context, offset, limit int) ([]*model.User, int, error)
+// NewInMemoryUserRepo returns a UserRepository backed by an in-memory map.
+// Intended for tests and local scaffolding; state is lost on process exit.
+func NewInMemoryUserRepo() UserRepository {
+	return &inMemoryUserRepo{byID: make(map[string]*model.User)}
 }
 
 type inMemoryUserRepo struct {
 	mu   sync.RWMutex
 	byID map[string]*model.User
-}
-
-func NewInMemoryUserRepo() UserRepository {
-	return &inMemoryUserRepo{byID: make(map[string]*model.User)}
 }
 
 func (r *inMemoryUserRepo) Create(_ context.Context, u *model.User) error {
