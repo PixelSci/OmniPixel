@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { computed, nextTick, ref } from 'vue'
 import { useTextareaAutosize } from '@vueuse/core'
 import { ArrowUp, ChevronDown, Globe, Mic, Paperclip, Square } from 'lucide-vue-next'
+import { computed, nextTick, ref } from 'vue'
 import { Button } from '@/components/ui/button'
 
 interface Props {
@@ -67,7 +67,8 @@ function handleKeydown(e: KeyboardEvent) {
 }
 
 function send() {
-    if (!canSend.value) return
+    if (!canSend.value)
+        return
     emit('send', text.value.trim())
     text.value = ''
     nextTick(() => triggerResize())
@@ -104,7 +105,6 @@ function toggleVoice() {
 
                 <!-- toolbar -->
                 <div class="flex items-center gap-0.5 border-t border-[rgba(0,0,0,0.06)] px-2.5 py-2 dark:border-[rgba(255,255,255,0.06)]">
-
                     <!-- model selector -->
                     <UiDropdownMenuDropdownMenu>
                         <UiDropdownMenuDropdownMenuTrigger as-child>

@@ -1,4 +1,10 @@
 <script lang="ts">
+</script>
+
+<script setup lang="ts">
+import { Plus } from 'lucide-vue-next'
+import { computed } from 'vue'
+
 export interface ChatSession {
     id: string
     title: string
@@ -6,6 +12,16 @@ export interface ChatSession {
     updatedAt: Date
     model?: string
 }
+
+const props = withDefaults(defineProps<Props>(), {
+    sessions: () => defaultSessions,
+    activeId: undefined,
+})
+
+const emit = defineEmits<{
+    select: [id: string]
+    new: []
+}>()
 
 // module-level constant — accessible to defineProps default factory
 const defaultSessions: ChatSession[] = [
@@ -66,29 +82,14 @@ const defaultSessions: ChatSession[] = [
         model: 'Claude 3.5',
     },
 ]
-</script>
-
-<script setup lang="ts">
-import { computed } from 'vue'
-import { Plus } from 'lucide-vue-next'
 
 interface Props {
     sessions?: ChatSession[]
     activeId?: string
 }
 
-const props = withDefaults(defineProps<Props>(), {
-    sessions: () => defaultSessions,
-    activeId: undefined,
-})
-
-const emit = defineEmits<{
-    select: [id: string]
-    new: []
-}>()
-
 // ── date grouping ────────────────────────────────────────────────────
-type Group = { label: string, sessions: ChatSession[] }
+interface Group { label: string, sessions: ChatSession[] }
 
 const groups = computed<Group[]>(() => {
     const now = new Date()
@@ -98,25 +99,25 @@ const groups = computed<Group[]>(() => {
     const startOf30Days = new Date(startOfToday.getTime() - 29 * 86400000)
 
     const buckets: Record<string, ChatSession[]> = {
-        Today: [],
-        Yesterday: [],
+        'Today': [],
+        'Yesterday': [],
         'Previous 7 Days': [],
         'Previous 30 Days': [],
-        Older: [],
+        'Older': [],
     }
 
     for (const s of props.sessions) {
         const t = s.updatedAt.getTime()
         if (t >= startOfToday.getTime())
-            buckets['Today'].push(s)
+            buckets.Today.push(s)
         else if (t >= startOfYesterday.getTime())
-            buckets['Yesterday'].push(s)
+            buckets.Yesterday.push(s)
         else if (t >= startOf7Days.getTime())
             buckets['Previous 7 Days'].push(s)
         else if (t >= startOf30Days.getTime())
             buckets['Previous 30 Days'].push(s)
         else
-            buckets['Older'].push(s)
+            buckets.Older.push(s)
     }
 
     return Object.entries(buckets)
@@ -128,10 +129,13 @@ function formatTime(date: Date): string {
     const now = new Date()
     const diff = now.getTime() - date.getTime()
     const mins = Math.floor(diff / 60000)
-    if (mins < 1) return 'Just now'
-    if (mins < 60) return `${mins}m ago`
+    if (mins < 1)
+        return 'Just now'
+    if (mins < 60)
+        return `${mins}m ago`
     const hrs = Math.floor(mins / 60)
-    if (hrs < 24) return `${hrs}h ago`
+    if (hrs < 24)
+        return `${hrs}h ago`
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
 }
 </script>

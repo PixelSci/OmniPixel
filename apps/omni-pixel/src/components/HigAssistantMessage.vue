@@ -33,7 +33,9 @@ defineProps<Props>()
 
             <!-- prose -->
             <div class="text-[14px] leading-[22px] text-[var(--hig-label)]">
-                <p class="whitespace-pre-wrap">{{ content }}</p>
+                <p class="whitespace-pre-wrap">
+                    {{ content }}
+                </p>
             </div>
         </div>
     </div>

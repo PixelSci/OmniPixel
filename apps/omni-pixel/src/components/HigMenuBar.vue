@@ -62,9 +62,9 @@ const imageSubItems: SubItem[] = [
 
 // ── Logo submenu ────────────────────────────────────────────────────────
 type LogoAction = 'profile' | 'models' | 'logout'
-type LogoSubItem =
-    | { type: 'item', label: string, action: LogoAction }
-    | { type: 'separator' }
+type LogoSubItem
+    = | { type: 'item', label: string, action: LogoAction }
+        | { type: 'separator' }
 
 const logoSubItems: LogoSubItem[] = [
     { type: 'item', label: '个人中心', action: 'profile' },
