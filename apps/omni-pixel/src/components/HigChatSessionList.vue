@@ -1,17 +1,6 @@
-<script lang="ts">
-</script>
-
 <script setup lang="ts">
 import { Plus } from 'lucide-vue-next'
 import { computed } from 'vue'
-
-export interface ChatSession {
-    id: string
-    title: string
-    preview?: string
-    updatedAt: Date
-    model?: string
-}
 
 const props = withDefaults(defineProps<Props>(), {
     sessions: () => defaultSessions,
@@ -82,6 +71,14 @@ const defaultSessions: ChatSession[] = [
         model: 'Claude 3.5',
     },
 ]
+
+export interface ChatSession {
+    id: string
+    title: string
+    preview?: string
+    updatedAt: Date
+    model?: string
+}
 
 interface Props {
     sessions?: ChatSession[]
