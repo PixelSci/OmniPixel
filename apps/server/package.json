@@ -4,7 +4,7 @@
     "version": "0.0.1",
     "private": true,
     "scripts": {
-        "dev": "go run .",
-        "build": "go build"
+        "dev": "go run ./cmd",
+        "build": "go build -o bin/server ./cmd"
     }
 }

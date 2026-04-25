@@ -2,9 +2,26 @@
 // It is not where Router / Controller / Usecase / Repository live — those sit at the module root.
 package internal
 
-import "omni-pixel/domain"
+import (
+	"time"
 
-// CreateAccessToken issues a JWT access token for the given user (stub — implement with your JWT library).
+	"github.com/golang-jwt/jwt/v5"
+
+	"omni-pixel/domain"
+)
+
 func CreateAccessToken(user *domain.User, secret string, expiry int) (accessToken string, err error) {
-	return "", nil
+	now := time.Now()
+	claims := domain.JwtCustomClaims{
+		UserID: user.ID,
+		Email:  user.Email,
+		RegisteredClaims: jwt.RegisteredClaims{
+			Subject:   user.ID,
+			IssuedAt:  jwt.NewNumericDate(now),
+			ExpiresAt: jwt.NewNumericDate(now.Add(time.Duration(expiry) * time.Hour)),
+		},
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	return token.SignedString([]byte(secret))
 }

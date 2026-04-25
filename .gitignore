@@ -10,6 +10,7 @@ lerna-debug.log*
 node_modules
 dist
 dist-ssr
+apps/server/bin
 *.local
 auto-imports.d.ts
 components.d.ts
