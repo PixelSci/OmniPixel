@@ -1,18 +1,12 @@
-<script setup lang="ts">
-import { Plus } from 'lucide-vue-next'
-import { computed } from 'vue'
+<script lang="ts">
+export interface ChatSession {
+    id: string
+    title: string
+    preview?: string
+    updatedAt: Date
+    model?: string
+}
 
-const props = withDefaults(defineProps<Props>(), {
-    sessions: () => defaultSessions,
-    activeId: undefined,
-})
-
-const emit = defineEmits<{
-    select: [id: string]
-    new: []
-}>()
-
-// module-level constant — accessible to defineProps default factory
 const defaultSessions: ChatSession[] = [
     {
         id: '1',
@@ -71,14 +65,21 @@ const defaultSessions: ChatSession[] = [
         model: 'Claude 3.5',
     },
 ]
+</script>
 
-export interface ChatSession {
-    id: string
-    title: string
-    preview?: string
-    updatedAt: Date
-    model?: string
-}
+<script setup lang="ts">
+import { Plus } from 'lucide-vue-next'
+import { computed } from 'vue'
+
+const props = withDefaults(defineProps<Props>(), {
+    sessions: () => defaultSessions,
+    activeId: undefined,
+})
+
+const emit = defineEmits<{
+    select: [id: string]
+    new: []
+}>()
 
 interface Props {
     sessions?: ChatSession[]
