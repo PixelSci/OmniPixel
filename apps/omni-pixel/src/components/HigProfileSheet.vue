@@ -1,13 +1,14 @@
 <script setup lang="ts">
 import { useVModel } from '@vueuse/core'
 import { Eye, EyeOff, Plus, Trash2 } from 'lucide-vue-next'
-import { reactive, ref } from 'vue'
+import { ref } from 'vue'
 import HigSheet from '@/components/HigSheet.vue'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
 import { Separator } from '@/components/ui/separator'
+import { useModelApiKeys } from '@/composables/useModelApiKeys'
 
 interface Props {
     open: boolean
@@ -41,40 +42,11 @@ const providerOptions = [
     { value: 'other', label: '其他' },
 ]
 
-interface ApiKeyEntry {
-    id: string
-    provider: string
-    label: string
-    key: string
-    show: boolean
-}
-
-let idSeed = 0
-function nextId() {
-    idSeed += 1
-    return `key-${idSeed}`
-}
-
-const keys = reactive<ApiKeyEntry[]>([
-    { id: nextId(), provider: 'openai', label: '工作号', key: 'sk-************1234', show: false },
-])
-
 const draftProvider = ref(providerOptions[0].value)
+const { keys, addKey: addModelApiKey, removeKey } = useModelApiKeys()
 
 function addKey() {
-    keys.push({
-        id: nextId(),
-        provider: draftProvider.value,
-        label: '',
-        key: '',
-        show: false,
-    })
-}
-
-function removeKey(id: string) {
-    const idx = keys.findIndex(k => k.id === id)
-    if (idx !== -1)
-        keys.splice(idx, 1)
+    addModelApiKey(draftProvider.value)
 }
 </script>
 

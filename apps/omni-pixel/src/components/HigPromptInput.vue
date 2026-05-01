@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { useTextareaAutosize } from '@vueuse/core'
 import { ArrowUp, ChevronDown, Globe, Mic, Paperclip, Square } from 'lucide-vue-next'
-import { computed, nextTick, ref } from 'vue'
+import { computed, nextTick, ref, watchEffect } from 'vue'
 import { Button } from '@/components/ui/button'
+import { useModelSettings } from '@/composables/useModelSettings'
+import type { FeatureModel } from '@/composables/useModelSettings'
 
 interface Props {
     placeholder?: string
@@ -17,7 +19,7 @@ const props = withDefaults(defineProps<Props>(), {
 })
 
 const emit = defineEmits<{
-    send: [message: string]
+    send: [payload: { message: string, model: FeatureModel }]
     stop: []
     attach: []
 }>()
@@ -26,38 +28,30 @@ const { textarea, input: text, triggerResize } = useTextareaAutosize({
     styleProp: 'height',
 })
 
-interface Model {
-    id: string
-    name: string
-    provider: string
-    badge?: string
-}
+const { chatModels } = useModelSettings()
+const selectedModelId = ref('gpt-4o-mini')
+const selectedModel = computed(() => chatModels.value.find(m => m.id === selectedModelId.value) || chatModels.value[0])
+const modelGroups = computed(() => {
+    const groups = new Map<string, FeatureModel[]>()
 
-const modelGroups: { label: string, models: Model[] }[] = [
-    {
-        label: 'Anthropic',
-        models: [
-            { id: 'claude-sonnet-4', name: 'Claude Sonnet 4', provider: 'anthropic', badge: 'Smart' },
-            { id: 'claude-haiku-4', name: 'Claude Haiku 4', provider: 'anthropic', badge: 'Fast' },
-        ],
-    },
-    {
-        label: 'OpenAI',
-        models: [
-            { id: 'gpt-4o', name: 'GPT-4o', provider: 'openai' },
-            { id: 'gpt-4o-mini', name: 'GPT-4o mini', provider: 'openai', badge: 'Fast' },
-        ],
-    },
-]
+    for (const model of chatModels.value) {
+        const models = groups.get(model.provider) || []
+        models.push(model)
+        groups.set(model.provider, models)
+    }
 
-const allModels = modelGroups.flatMap(g => g.models)
-const selectedModelId = ref('claude-sonnet-4')
-const selectedModel = computed(() => allModels.find(m => m.id === selectedModelId.value)!)
+    return [...groups.entries()].map(([label, models]) => ({ label, models }))
+})
 
 const webSearchEnabled = ref(false)
 const isRecording = ref(false)
 
-const canSend = computed(() => text.value.trim().length > 0 && !props.disabled && !props.loading)
+const canSend = computed(() => text.value.trim().length > 0 && !!selectedModel.value && !props.disabled && !props.loading)
+
+watchEffect(() => {
+    if (!selectedModel.value && chatModels.value[0])
+        selectedModelId.value = chatModels.value[0].id
+})
 
 function handleKeydown(e: KeyboardEvent) {
     if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) {
@@ -69,7 +63,9 @@ function handleKeydown(e: KeyboardEvent) {
 function send() {
     if (!canSend.value)
         return
-    emit('send', text.value.trim())
+    if (!selectedModel.value)
+        return
+    emit('send', { message: text.value.trim(), model: selectedModel.value })
     text.value = ''
     nextTick(() => triggerResize())
 }
@@ -115,7 +111,7 @@ function toggleVoice() {
                                 aria-label="Select model"
                                 class="h-[30px] gap-1 rounded-lg px-2 text-[12px] font-medium text-[var(--hig-secondary-label)] data-[state=open]:bg-accent"
                             >
-                                <span class="max-w-[120px] truncate">{{ selectedModel.name }}</span>
+                                <span class="max-w-[120px] truncate">{{ selectedModel?.name ?? 'No model' }}</span>
                                 <ChevronDown class="size-[11px]! opacity-60" :stroke-width="2" />
                             </Button>
                         </UiDropdownMenuDropdownMenuTrigger>
