@@ -9,5 +9,8 @@ import (
 
 func NewSessionRoute(router fiber.Router, sessionController *controller.SessionController, accessTokenSecret string) {
 	router.Get("/sessions", middleware.JWTAuthMiddleware(accessTokenSecret), sessionController.ListSessions)
+	router.Post("/sessions", middleware.JWTAuthMiddleware(accessTokenSecret), sessionController.CreateSession)
+	router.Get("/sessions/:id", middleware.JWTAuthMiddleware(accessTokenSecret), sessionController.GetSession)
+	router.Put("/sessions/:id/chat", middleware.JWTAuthMiddleware(accessTokenSecret), sessionController.SaveSessionChatContent)
 	router.Delete("/sessions/:id", middleware.JWTAuthMiddleware(accessTokenSecret), sessionController.DeleteSession)
 }

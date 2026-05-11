@@ -39,21 +39,32 @@ type SessionListResponse struct {
 	Sessions []SessionListItem `json:"sessions"`
 }
 
+type SessionDetailResponse struct {
+	ID        string        `json:"id"`
+	Title     string        `json:"title"`
+	Preview   string        `json:"preview,omitempty"`
+	Model     string        `json:"model,omitempty"`
+	Messages  []ChatMessage `json:"messages"`
+	CreatedAt time.Time     `json:"created_at"`
+	UpdatedAt time.Time     `json:"updated_at"`
+}
+
 type CreateSessionRequest struct {
-	UserID  string
-	Title   string
-	Preview string
-	Model   string
+	UserID  string `json:"-"`
+	Title   string `json:"title"`
+	Preview string `json:"preview"`
+	Model   string `json:"model"`
 }
 
 type SaveSessionChatContentRequest struct {
-	SessionID string
-	UserID    string
-	Messages  []ChatMessage
+	SessionID string        `json:"-"`
+	UserID    string        `json:"-"`
+	Messages  []ChatMessage `json:"messages"`
 }
 
 type SessionRepository interface {
 	ListByUserID(userID string) ([]SessionListItem, error)
+	FindByID(sessionID string, userID string) (*Session, error)
 	Create(session Session) (*Session, error)
 	SaveChatContent(sessionID string, userID string, chatContent []byte, preview string) error
 	Delete(sessionID string, userID string) error

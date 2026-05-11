@@ -2,8 +2,10 @@ package repository
 
 import (
 	"context"
+	"errors"
 	"time"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"omni-pixel/domain"
@@ -55,6 +57,39 @@ func (r *SessionRepository) ListByUserID(userID string) ([]domain.SessionListIte
 	}
 
 	return sessions, nil
+}
+
+func (r *SessionRepository) FindByID(sessionID string, userID string) (*domain.Session, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), r.timeout)
+	defer cancel()
+
+	query := `
+		SELECT id, user_id, title, preview, model, chat_content, created_at, updated_at, last_chat_at
+		FROM sessions
+		WHERE id = $1 AND user_id = $2
+		LIMIT 1
+	`
+
+	var session domain.Session
+	err := r.db.QueryRow(ctx, query, sessionID, userID).Scan(
+		&session.ID,
+		&session.UserID,
+		&session.Title,
+		&session.Preview,
+		&session.Model,
+		&session.ChatContent,
+		&session.CreatedAt,
+		&session.UpdatedAt,
+		&session.LastChatAt,
+	)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, domain.ErrSessionNotFound
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	return &session, nil
 }
 
 func (r *SessionRepository) Create(session domain.Session) (*domain.Session, error) {
