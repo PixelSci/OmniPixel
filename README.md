@@ -1,5 +1,12 @@
-# Vue 3 + TypeScript + Vite
+# OmniPixel
 
-This template should help get you started developing with Vue 3 and TypeScript in Vite. The template uses Vue 3 `<script setup>` SFCs, check out the [script setup docs](https://v3.vuejs.org/api/sfc-script-setup.html#sfc-script-setup) to learn more.
+OmniPixel is an all-in-one AI assistant platform for chat, image, video, audio, and other model-powered workflows.
 
-Learn more about the recommended Project Setup and IDE Support in the [Vue Docs TypeScript Guide](https://vuejs.org/guide/typescript/overview.html#project-setup).
+The project is organized as a monorepo with a product app, a marketing site, an API server, and shared database initialization assets. The goal is to provide one workspace where users can manage model providers, start multimodal AI tasks, and keep their generated content and conversation history in one place.
+
+## Apps
+
+- `apps/omni-pixel` - the main Vue 3 + Vite product app.
+- `apps/web` - the Nuxt 4 website.
+- `apps/server` - the Go API server.
+- `packages/db` - PostgreSQL initialization SQL.
