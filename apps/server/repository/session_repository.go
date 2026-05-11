@@ -120,3 +120,23 @@ func (r *SessionRepository) SaveChatContent(sessionID string, userID string, cha
 
 	return nil
 }
+
+func (r *SessionRepository) Delete(sessionID string, userID string) error {
+	ctx, cancel := context.WithTimeout(context.Background(), r.timeout)
+	defer cancel()
+
+	commandTag, err := r.db.Exec(
+		ctx,
+		`DELETE FROM sessions WHERE id = $1 AND user_id = $2`,
+		sessionID,
+		userID,
+	)
+	if err != nil {
+		return err
+	}
+	if commandTag.RowsAffected() == 0 {
+		return domain.ErrSessionNotFound
+	}
+
+	return nil
+}

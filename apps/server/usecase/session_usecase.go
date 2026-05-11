@@ -60,6 +60,15 @@ func (u *SessionUsecase) SaveSessionChatContent(request domain.SaveSessionChatCo
 	)
 }
 
+func (u *SessionUsecase) DeleteSession(sessionID string, userID string) error {
+	sessionID = strings.TrimSpace(sessionID)
+	if sessionID == "" {
+		return domain.ErrSessionNotFound
+	}
+
+	return u.sessionRepository.Delete(sessionID, userID)
+}
+
 func sessionPreview(messages []domain.ChatMessage) string {
 	for i := len(messages) - 1; i >= 0; i-- {
 		content := strings.TrimSpace(messages[i].Content)

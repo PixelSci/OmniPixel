@@ -56,4 +56,5 @@ type SessionRepository interface {
 	ListByUserID(userID string) ([]SessionListItem, error)
 	Create(session Session) (*Session, error)
 	SaveChatContent(sessionID string, userID string, chatContent []byte, preview string) error
+	Delete(sessionID string, userID string) error
 }
