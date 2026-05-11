@@ -5,7 +5,13 @@ import (
 	"time"
 )
 
-var ErrSessionNotFound = errors.New("session not found")
+var (
+	ErrSessionNotFound      = errors.New("session not found")
+	ErrInvalidSessionID     = errors.New("invalid session id")
+	ErrInvalidPrompt        = errors.New("invalid prompt")
+	ErrInvalidAIConfig      = errors.New("invalid ai config")
+	ErrUnsupportedAIProvider = errors.New("unsupported ai provider")
+)
 
 type ChatMessage struct {
 	ID      string `json:"id"`
@@ -50,6 +56,7 @@ type SessionDetailResponse struct {
 }
 
 type CreateSessionRequest struct {
+	ID      string `json:"session_id"`
 	UserID  string `json:"-"`
 	Title   string `json:"title"`
 	Preview string `json:"preview"`
@@ -60,6 +67,34 @@ type SaveSessionChatContentRequest struct {
 	SessionID string        `json:"-"`
 	UserID    string        `json:"-"`
 	Messages  []ChatMessage `json:"messages"`
+}
+
+type SendSessionPromptRequest struct {
+	SessionID string `json:"session_id"`
+	UserID    string `json:"-"`
+	Prompt    string `json:"prompt"`
+	Provider  string `json:"provider"`
+	Model     string `json:"model"`
+	APIKey    string `json:"api_key"`
+}
+
+type SendSessionPromptResponse struct {
+	SessionID        string        `json:"session_id"`
+	CreatedSession   bool          `json:"created_session"`
+	Message          ChatMessage   `json:"message"`
+	AssistantMessage ChatMessage   `json:"assistant_message"`
+	Messages         []ChatMessage `json:"messages"`
+}
+
+type ChatCompletionRequest struct {
+	Provider string
+	Model    string
+	APIKey   string
+	Messages []ChatMessage
+}
+
+type ChatCompletionClient interface {
+	Complete(request ChatCompletionRequest) (string, error)
 }
 
 type SessionRepository interface {
