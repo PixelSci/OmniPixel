@@ -192,7 +192,7 @@ func (controller *SessionController) DeleteSession(c fiber.Ctx) error {
 }
 
 func userIDFromLocals(c fiber.Ctx) (string, error) {
-	userID, ok := fiber.Locals(c, "user_id").(string)
+	userID, ok := c.Locals("user_id").(string)
 	if !ok || userID == "" {
 		return "", domain.ErrInvalidCredentials
 	}
