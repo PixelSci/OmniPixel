@@ -1,53 +1,16 @@
+name: omni-pixel
+
 services:
   db:
-    build:
-      context: .
-      target: db
+    image: postgres:18
     environment:
+      POSTGRES_DB: omni_pixel
       POSTGRES_USER: pixel
       POSTGRES_PASSWORD: "123456"
-      POSTGRES_DB: omni_pixel
     ports:
       - "5432:5432"
     volumes:
-      - postgres-data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U pixel -d omni_pixel"]
-      interval: 5s
-      timeout: 5s
-      retries: 10
-
-  backend:
-    build:
-      context: .
-      target: backend
-    environment:
-      APP_ENV: production
-      SERVER_ADDRESS: :8080
-      CONTEXT_TIMEOUT: "30"
-      DB_HOST: db
-      DB_PORT: "5432"
-      DB_USER: pixel
-      DB_PASS: "123456"
-      DB_NAME: omni_pixel
-      ACCESS_TOKEN_EXPIRY_HOUR: "2"
-      REFRESH_TOKEN_EXPIRY_HOUR: "168"
-      ACCESS_TOKEN_SECRET: change-me-in-production
-      REFRESH_TOKEN_SECRET: change-me-in-production
-    ports:
-      - "8080:8080"
-    depends_on:
-      db:
-        condition: service_healthy
-
-  frontend:
-    build:
-      context: .
-      target: frontend
-    ports:
-      - "3000:80"
-    depends_on:
-      - backend
+      - postgres-data:/var/lib/postgresql
 
 volumes:
   postgres-data:
