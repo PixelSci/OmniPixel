@@ -1,54 +1,43 @@
-FROM postgres:17-alpine AS db
+# OmniPixel Multi-Stage Dockerfile
+# Stage 1: Build Frontend
+# Stage 2: Build Backend
+# Stage 3: Final minimal image
 
-COPY packages/db/init/*.sql /docker-entrypoint-initdb.d/
+ARG NODE_IMAGE=node:24-alpine
+ARG GOLANG_IMAGE=golang:1.25.0-alpine
+ARG ALPINE_IMAGE=alpine:3.21
+ARG POSTGRES_IMAGE=postgres:18-alpine
+ARG GOPROXY=https://goproxy.cn,direct
+ARG GOSUMDB=sum.golang.google.cn
 
+# Stage 1
+# --------------------------------------
+FROM ${NODE_IMAGE} AS frontend-builder
+WORKDIR /build/omni-pixel
+# Install pnpm
+RUN corepack enable && corepack prepare pnpm@latest --activate
+# Install dependencies first (better caching)
+COPY apps/omni-pixel/package.json apps/omni-pixel/pnpm-lock.yaml ./
+RUN pnpm install --frozen-lockfile
+# Build frontend source
+COPY apps/omni-pixel/ ./
+RUN pnpm run -F omni-pixel build
+# --------------------------------------
 
-FROM node:22-alpine AS frontend-builder
-
-WORKDIR /src
-
-RUN corepack enable
-
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
-COPY apps/omni-pixel/package.json apps/omni-pixel/package.json
-RUN pnpm install --frozen-lockfile --filter ./apps/omni-pixel...
-
-COPY apps/omni-pixel apps/omni-pixel
-RUN pnpm --filter ./apps/omni-pixel build
-
-
-FROM nginx:1.27-alpine AS frontend
-
-COPY docker/frontend/nginx.conf /etc/nginx/conf.d/default.conf
-COPY --from=frontend-builder /src/apps/omni-pixel/dist /usr/share/nginx/html
-
-EXPOSE 80
-
-
-FROM golang:1.25-alpine AS backend-builder
-
-WORKDIR /src/apps/server
-
+# stage 2
+# --------------------------------------
+FROM ${GOLANG_IMAGE} AS backend-builder
+ENV GOPROXY=${GOPROXY}
+ENV GOSUMDB=${GOSUMDB}
+WORKDIR /build/server
+# Copy go mod files first (better caching)
 COPY apps/server/go.mod apps/server/go.sum ./
 RUN go mod download
+# Copy backend source first
+COPY apps/server/ ./
+RUN go build -o main ./cmd/
+# --------------------------------------
 
-COPY apps/server ./
-RUN CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags="-s -w" -o /out/server ./cmd
-
-
-FROM alpine:3.22 AS backend
-
-RUN addgroup -S app && adduser -S app -G app
-
-WORKDIR /app
-
-COPY --from=backend-builder /out/server /app/server
-
-ENV APP_ENV=production
-ENV SERVER_ADDRESS=:8080
-
-EXPOSE 8080
-
-USER app
-
-ENTRYPOINT ["/app/server"]
+# stage 3
+# --------------------------------------
+FROM ${POSTGRES_IMAGE} AS pg-client
