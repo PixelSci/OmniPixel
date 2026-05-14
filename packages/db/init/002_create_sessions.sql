@@ -1,10 +1,13 @@
 CREATE TABLE IF NOT EXISTS sessions (
   id UUID PRIMARY KEY,
-  session_id UUID NOT NULL UNIQUE,
   user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   title VARCHAR(255) NOT NULL,
+  preview TEXT,
+  model VARCHAR(100),
+  chat_content JSONB,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  last_chat_at TIMESTAMPTZ,
   CONSTRAINT sessions_title_check CHECK (length(trim(title)) > 0)
 );
 

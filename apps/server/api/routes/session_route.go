@@ -12,5 +12,6 @@ func NewSessionRoute(router fiber.Router, sessionController *controller.SessionC
 	router.Post("/sessions", middleware.JWTAuthMiddleware(accessTokenSecret), sessionController.CreateSession)
 	router.Get("/sessions/:id", middleware.JWTAuthMiddleware(accessTokenSecret), sessionController.GetSession)
 	router.Post("/sessions/:id/chat", middleware.JWTAuthMiddleware(accessTokenSecret), sessionController.SendSessionPrompt)
+	router.Post("/sessions/:id/content", middleware.JWTAuthMiddleware(accessTokenSecret), sessionController.SaveSessionChatContent)
 	router.Delete("/sessions/:id", middleware.JWTAuthMiddleware(accessTokenSecret), sessionController.DeleteSession)
 }
