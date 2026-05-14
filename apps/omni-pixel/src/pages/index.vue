@@ -1,113 +1,78 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
+import { useSessions } from '@/composables/useSessions'
 import { useModelApiKeys } from '@/composables/useModelApiKeys'
+import { sendChat, getSession, type ChatMessage } from '@/lib/session'
+import type { FeatureModel } from '@/composables/useModelSettings'
 
-const activeSessionId = ref<string>('1')
-const isLoading = ref(false)
+const {
+    sessions: sessionList,
+    activeId,
+    loading: sessionsLoading,
+    error: sessionsError,
+    fetchSessions,
+    create,
+    remove,
+    setActive,
+} = useSessions()
 const { keyForProvider } = useModelApiKeys()
 
-interface ChatModel {
-    id: string
-    name: string
-    provider: string
-    providerId: string
-}
-
-interface ChatMessage {
-    id: string
-    role: 'user' | 'assistant'
-    content: string
-    model?: string
-}
-
-const messages = ref<ChatMessage[]>([
-    {
-        id: 'seed-user-1',
-        role: 'user',
-        content: 'What is the best way to share state between components in Vue 3?',
-    },
-    {
-        id: 'seed-assistant-1',
-        role: 'assistant',
-        model: 'Claude Sonnet 4',
-        content: `The recommended approach in Vue 3 is to use composables — plain functions that encapsulate reactive state and expose it via the Composition API.
-
-For local, parent-child communication you can rely on props and emits. But when multiple unrelated components need to share the same piece of state, extract it into a composable module:
-
-// useCounter.ts
-import { ref } from 'vue'
-const count = ref(0)
-export function useCounter() {
-  return { count, increment: () => count.value++ }
-}
-
-Because the ref is declared at module scope, every component that calls useCounter() shares the same reactive instance. For more complex cases, Pinia is the official state-management library and integrates naturally with Vue DevTools.`,
-    },
-    {
-        id: 'seed-user-2',
-        role: 'user',
-        content: 'Can you show me a Pinia example?',
-    },
-    {
-        id: 'seed-assistant-2',
-        role: 'assistant',
-        model: 'Claude Sonnet 4',
-        content: 'Sure! Here is a minimal Pinia store and how to use it in a component.',
-    },
-])
+const messages = ref<ChatMessage[]>([])
+const isLoading = ref(false)
+const isCreatingSession = ref(false)
 
 let abortController: AbortController | null = null
-
-const chatProviderConfig: Record<string, { endpoint: string, providerName: string }> = {
-    openai: {
-        endpoint: 'https://api.openai.com/v1/chat/completions',
-        providerName: 'OpenAI',
-    },
-    deepseek: {
-        endpoint: 'https://api.deepseek.com/chat/completions',
-        providerName: 'DeepSeek',
-    },
-}
 
 function nextMessageId() {
     return `msg-${Date.now()}-${Math.random().toString(16).slice(2)}`
 }
 
-function handleSelect(id: string) {
-    activeSessionId.value = id
+onMounted(() => {
+    fetchSessions()
+})
+
+async function handleSelect(id: string) {
+    setActive(id)
+    try {
+        const detail = await getSession(id)
+        messages.value = detail.messages ?? []
+    } catch {
+        messages.value = []
+    }
 }
 
-function handleNew() {
-    activeSessionId.value = ''
+async function handleNew() {
+    isCreatingSession.value = true
+    const session = await create()
+    isCreatingSession.value = false
+    if (session) {
+        setActive(session.id)
+        messages.value = []
+    }
 }
 
-async function handleSend(payload: { message: string, model: ChatModel }) {
-    messages.value.push({
+async function handleDelete(id: string) {
+    await remove(id)
+}
+
+async function handleSend(payload: { message: string, model: FeatureModel }) {
+    const sessionId = activeId.value
+    if (!sessionId) return
+
+    const userMessage: ChatMessage = {
         id: nextMessageId(),
         role: 'user',
         content: payload.message,
-    })
-
-    const providerConfig = chatProviderConfig[payload.model.providerId]
-
-    if (!providerConfig) {
-        messages.value.push({
-            id: nextMessageId(),
-            role: 'assistant',
-            model: payload.model.name,
-            content: `当前还没有接入 ${payload.model.provider} 的 Chat 接口。`,
-        })
-        return
     }
+    messages.value.push(userMessage)
 
     const apiKey = keyForProvider(payload.model.providerId)
-
     if (!apiKey) {
         messages.value.push({
             id: nextMessageId(),
             role: 'assistant',
             model: payload.model.name,
-            content: `请先在个人中心添加 ${providerConfig.providerName} API Key，然后再发送消息。`,
+            content: `请先在个人中心添加 ${payload.model.provider} API Key，然后再发送消息。`,
         })
         return
     }
@@ -116,42 +81,15 @@ async function handleSend(payload: { message: string, model: ChatModel }) {
     abortController = new AbortController()
 
     try {
-        const response = await fetch(providerConfig.endpoint, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                Authorization: `Bearer ${apiKey}`,
-            },
-            body: JSON.stringify({
-                model: payload.model.id,
-                messages: messages.value
-                    .filter(message => message.role === 'user' || message.role === 'assistant')
-                    .map(message => ({
-                        role: message.role,
-                        content: message.content,
-                    })),
-            }),
-            signal: abortController.signal,
+        const res = await sendChat(sessionId, {
+            prompt: payload.message,
+            provider: payload.model.providerId,
+            model: payload.model.id,
+            api_key: apiKey,
         })
-
-        if (!response.ok) {
-            const error = await response.json().catch(() => null)
-            throw new Error(error?.error?.message || `${providerConfig.providerName} request failed: ${response.status}`)
-        }
-
-        const data = await response.json()
-        const content = data?.choices?.[0]?.message?.content?.trim() || '模型没有返回内容。'
-
-        messages.value.push({
-            id: nextMessageId(),
-            role: 'assistant',
-            model: payload.model.name,
-            content,
-        })
-    }
-    catch (error) {
-        if (error instanceof DOMException && error.name === 'AbortError')
-            return
+        messages.value.push(res.assistant_message)
+    } catch (error) {
+        if (error instanceof DOMException && error.name === 'AbortError') return
 
         messages.value.push({
             id: nextMessageId(),
@@ -159,8 +97,7 @@ async function handleSend(payload: { message: string, model: ChatModel }) {
             model: payload.model.name,
             content: error instanceof Error ? error.message : '调用模型时发生未知错误。',
         })
-    }
-    finally {
+    } finally {
         isLoading.value = false
         abortController = null
     }
@@ -177,9 +114,12 @@ function handleStop() {
         <div class="flex h-full w-full">
             <HigSidebar>
                 <HigChatSessionList
-                    :active-id="activeSessionId"
+                    :sessions="sessionList"
+                    :active-id="activeId ?? undefined"
+                    :loading="sessionsLoading"
                     @select="handleSelect"
                     @new="handleNew"
+                    @delete="handleDelete"
                 />
             </HigSidebar>
 
@@ -187,7 +127,10 @@ function handleStop() {
             <div class="flex flex-1 flex-col overflow-hidden">
                 <!-- messages -->
                 <div class="flex flex-1 flex-col overflow-y-auto py-6">
-                    <div v-if="!activeSessionId" class="flex flex-1 items-center justify-center text-[var(--hig-secondary-label)] text-[13px]">
+                    <div v-if="!activeId && sessionsError" class="flex flex-1 items-center justify-center text-[var(--hig-secondary-label)] text-[13px]">
+                        {{ sessionsError }}
+                    </div>
+                    <div v-else-if="!activeId" class="flex flex-1 items-center justify-center text-[var(--hig-secondary-label)] text-[13px]">
                         Select or start a new chat
                     </div>
                     <div v-else class="mx-auto flex w-full max-w-3/5 flex-col gap-5 px-4">
@@ -208,6 +151,7 @@ function handleStop() {
                 <!-- prompt input -->
                 <HigPromptInput
                     :loading="isLoading"
+                    :disabled="isCreatingSession"
                     @send="handleSend"
                     @stop="handleStop"
                 />

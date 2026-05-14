@@ -1,93 +1,24 @@
-<script lang="ts">
-export interface ChatSession {
-    id: string
-    title: string
-    preview?: string
-    updatedAt: Date
-    model?: string
-}
-
-const defaultSessions: ChatSession[] = [
-    {
-        id: '1',
-        title: 'Tailwind v4 migration guide',
-        preview: 'How do I migrate my existing Tailwind CSS v3 project to v4?',
-        updatedAt: new Date(Date.now() - 1000 * 60 * 14),
-        model: 'GPT-4o',
-    },
-    {
-        id: '2',
-        title: 'Vue composable pattern',
-        preview: 'What is the best way to share state between components using composables?',
-        updatedAt: new Date(Date.now() - 1000 * 60 * 60 * 2),
-        model: 'Claude 3.5',
-    },
-    {
-        id: '3',
-        title: 'Regex for email validation',
-        preview: 'Write a regex that validates common email address formats.',
-        updatedAt: new Date(Date.now() - 1000 * 60 * 60 * 5),
-        model: 'GPT-4o',
-    },
-    {
-        id: '4',
-        title: 'Docker multi-stage build',
-        preview: 'Explain how multi-stage Docker builds reduce final image size.',
-        updatedAt: new Date(Date.now() - 1000 * 60 * 60 * 24),
-        model: 'Claude 3.5',
-    },
-    {
-        id: '5',
-        title: 'Postgres full-text search',
-        preview: 'How do I implement full-text search with ranking in PostgreSQL?',
-        updatedAt: new Date(Date.now() - 1000 * 60 * 60 * 26),
-        model: 'GPT-4o',
-    },
-    {
-        id: '6',
-        title: 'TypeScript generics deep dive',
-        preview: 'Explain conditional types and infer keyword with real examples.',
-        updatedAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 3),
-        model: 'Claude 3.5',
-    },
-    {
-        id: '7',
-        title: 'Rust ownership explained',
-        preview: 'I keep getting borrow checker errors. Can you explain ownership?',
-        updatedAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 5),
-        model: 'GPT-4o',
-    },
-    {
-        id: '8',
-        title: 'CSS grid vs flexbox',
-        preview: 'When should I prefer CSS Grid over Flexbox for layout?',
-        updatedAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 10),
-        model: 'Claude 3.5',
-    },
-]
-</script>
-
 <script setup lang="ts">
-import { Plus } from 'lucide-vue-next'
+import { Plus, Trash2 } from 'lucide-vue-next'
 import { computed } from 'vue'
+import type { SessionItem } from '@/lib/session'
 
-const props = withDefaults(defineProps<Props>(), {
-    sessions: () => defaultSessions,
-    activeId: undefined,
-})
+const props = defineProps<Props>()
 
 const emit = defineEmits<{
     select: [id: string]
     new: []
+    delete: [id: string]
 }>()
 
 interface Props {
-    sessions?: ChatSession[]
+    sessions: SessionItem[]
     activeId?: string
+    loading?: boolean
 }
 
 // ── date grouping ────────────────────────────────────────────────────
-interface Group { label: string, sessions: ChatSession[] }
+interface Group { label: string, sessions: SessionItem[] }
 
 const groups = computed<Group[]>(() => {
     const now = new Date()
@@ -96,7 +27,7 @@ const groups = computed<Group[]>(() => {
     const startOf7Days = new Date(startOfToday.getTime() - 6 * 86400000)
     const startOf30Days = new Date(startOfToday.getTime() - 29 * 86400000)
 
-    const buckets: Record<string, ChatSession[]> = {
+    const buckets: Record<string, SessionItem[]> = {
         'Today': [],
         'Yesterday': [],
         'Previous 7 Days': [],
@@ -105,7 +36,7 @@ const groups = computed<Group[]>(() => {
     }
 
     for (const s of props.sessions) {
-        const t = s.updatedAt.getTime()
+        const t = new Date(s.updated_at).getTime()
         if (t >= startOfToday.getTime())
             buckets.Today.push(s)
         else if (t >= startOfYesterday.getTime())
@@ -123,7 +54,8 @@ const groups = computed<Group[]>(() => {
         .map(([label, sessions]) => ({ label, sessions }))
 })
 
-function formatTime(date: Date): string {
+function formatTime(dateStr: string): string {
+    const date = new Date(dateStr)
     const now = new Date()
     const diff = now.getTime() - date.getTime()
     const mins = Math.floor(diff / 60000)
@@ -135,6 +67,12 @@ function formatTime(date: Date): string {
     if (hrs < 24)
         return `${hrs}h ago`
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+}
+
+function handleDelete(id: string) {
+    if (confirm('Delete this chat?')) {
+        emit('delete', id)
+    }
 }
 </script>
 
@@ -150,6 +88,9 @@ function formatTime(date: Date): string {
         </button>
 
         <!-- grouped session list -->
+        <div v-if="loading && sessions.length === 0" class="px-2 py-3 text-center text-[12px] text-[var(--hig-tertiary-label)]">
+            Loading sessions…
+        </div>
         <template v-for="group in groups" :key="group.label">
             <!-- section label -->
             <p class="mt-2 mb-0.5 px-2 text-[11px] font-semibold uppercase tracking-wide text-[var(--hig-tertiary-label,rgba(60,60,67,0.3))] dark:text-[rgba(235,235,245,0.3)] first:mt-0">
@@ -174,6 +115,15 @@ function formatTime(date: Date): string {
                     >
                         {{ session.title }}
                     </span>
+                    <!-- delete button, shown on hover -->
+                    <button
+                        class="shrink-0 rounded p-0.5 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-black/10 dark:hover:bg-white/10"
+                        :class="activeId === session.id ? 'text-white/70' : 'text-[var(--hig-tertiary-label)]'"
+                        @click.stop="handleDelete(session.id)"
+                        aria-label="Delete session"
+                    >
+                        <Trash2 class="size-3" />
+                    </button>
                     <!-- timestamp -->
                     <span
                         class="shrink-0 text-[11px] tabular-nums"
@@ -181,7 +131,7 @@ function formatTime(date: Date): string {
                             ? 'text-white/70'
                             : 'text-[var(--hig-tertiary-label,rgba(60,60,67,0.3))] dark:text-[rgba(235,235,245,0.3)]'"
                     >
-                        {{ formatTime(session.updatedAt) }}
+                        {{ formatTime(session.updated_at) }}
                     </span>
                 </div>
 
