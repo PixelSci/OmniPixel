@@ -1,4 +1,4 @@
-import { api } from './api'
+import { http } from './http'
 
 export interface SessionItem {
     id: string
@@ -46,16 +46,16 @@ export interface SendChatResponse {
 }
 
 export function listSessions(): Promise<SessionListResponse> {
-    return api.get<SessionListResponse>('/sessions')
+    return http.get<SessionListResponse>('/sessions')
 }
 
 export function getSession(id: string): Promise<SessionDetail> {
-    return api.get<SessionDetail>(`/sessions/${id}`)
+    return http.get<SessionDetail>(`/sessions/${id}`)
 }
 
 export function createSession(): Promise<SessionDetail> {
     const id = crypto.randomUUID()
-    return api.post<SessionDetail>('/sessions', {
+    return http.post<SessionDetail>('/sessions', {
         session_id: id,
         title: 'New Chat',
         preview: '',
@@ -64,11 +64,11 @@ export function createSession(): Promise<SessionDetail> {
 }
 
 export function deleteSession(id: string): Promise<void> {
-    return api.delete<void>(`/sessions/${id}`)
+    return http.delete<void>(`/sessions/${id}`)
 }
 
 export function sendChat(sessionId: string, payload: SendChatPayload): Promise<SendChatResponse> {
-    return api.post<SendChatResponse>(`/sessions/${sessionId}/chat`, {
+    return http.post<SendChatResponse>(`/sessions/${sessionId}/chat`, {
         session_id: sessionId,
         ...payload,
     })

@@ -6,7 +6,7 @@ import {
     type SessionItem,
     type SessionDetail,
 } from '@/lib/session'
-import { ApiError } from '@/lib/api'
+import { ApiError } from '@/lib/http'
 
 export function useSessions() {
     const sessions: Ref<SessionItem[]> = ref([])
