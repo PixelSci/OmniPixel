@@ -1,49 +1,41 @@
 package bootstrap
 
 import (
-	"time"
-
-	"github.com/gofiber/fiber/v3"
-	"github.com/jackc/pgx/v5/pgxpool"
-
-	"omni-pixel/api/controller"
+	"log"
 	"omni-pixel/api/middleware"
 	"omni-pixel/api/routes"
-	"omni-pixel/repository"
-	"omni-pixel/usecase"
+
+	"github.com/gofiber/fiber/v3"
 )
 
-func NewApp(env *Env, db *pgxpool.Pool) *fiber.App {
+type BootStrap struct {
+	app *fiber.App
+	p   *Providers
+}
+
+func NewApp() *BootStrap {
 	app := fiber.New(fiber.Config{
 		AppName: "OmniPixel Server",
 	})
 
 	app.Use(middleware.CORSMiddleware())
 
-	timeout := time.Duration(env.ContextTimeout) * time.Second
-	userRepository := repository.NewUserRepository(db, timeout)
-	sessionRepository := repository.NewSessionRepository(db, timeout)
-
-	healthUseCase := usecase.NewHealthUseCase()
-	accountUseCase := usecase.NewAccountUseCase(
-		userRepository,
-		env.AccessTokenSecret,
-		env.AccessTokenExpiryHour,
-	)
-	sessionUseCase := usecase.NewSessionUseCase(sessionRepository)
-
-	healthController := controller.NewHealthController(healthUseCase)
-	accountController := controller.NewAccountController(accountUseCase)
-	sessionController := controller.NewSessionController(sessionUseCase)
+	providers := NewProviders()
 
 	api := app.Group("/api")
 	v1 := api.Group("/v1")
 
-	routes.NewHealthRoute(v1, healthController)
-	routes.NewAccountRoutes(v1, accountController)
+	routes.NewHealthRoute(v1, providers.HealthController)
+	routes.NewAccountRoutes(v1, providers.AccountController)
 
-	auth := v1.Group("", middleware.JWTAuthMiddleware(env.AccessTokenSecret))
-	routes.NewSessionRoutes(auth, sessionController)
+	auth := v1.Group("", middleware.JWTAuthMiddleware(providers.ENV.AccessTokenSecret))
+	routes.NewSessionRoutes(auth, providers.SessionController)
 
-	return app
+	return &BootStrap{app, providers}
+}
+
+func (b *BootStrap) Start() {
+	if err := b.app.Listen(b.p.ENV.ServerAddress); err != nil {
+		log.Fatalf("server stopped: %v", err)
+	}
 }
