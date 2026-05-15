@@ -39,14 +39,14 @@ func NewApp(env *Env, db *pgxpool.Pool) *fiber.App {
 	signinController := controller.NewSigninController(signinUsecase)
 	sessionController := controller.NewSessionController(sessionUsecase)
 
+	healthUseCase := usecase.NewHealthUseCase()
+	healthController := controller.NewHealthController(healthUseCase)
+
 	api := app.Group("/api")
 	v1 := api.Group("/v1")
 	routes.NewSigninRoute(v1, signinController)
 	routes.NewSessionRoute(v1, sessionController, env.AccessTokenSecret)
-
-	app.Get("/health", func(c fiber.Ctx) error {
-		return c.JSON(fiber.Map{"status": "ok"})
-	})
+	routes.NewHealthRoute(v1, healthController)
 
 	return app
 }
