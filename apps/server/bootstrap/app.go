@@ -27,6 +27,7 @@ func NewApp(env *Env, db *pgxpool.Pool) *fiber.App {
 
 	timeout := time.Duration(env.ContextTimeout) * time.Second
 	userRepository := repository.NewUserRepository(db, timeout)
+	sessionRepository := repository.NewSessionRepository(db, timeout)
 
 	healthUseCase := usecase.NewHealthUseCase()
 	accountUseCase := usecase.NewAccountUseCase(
@@ -34,14 +35,17 @@ func NewApp(env *Env, db *pgxpool.Pool) *fiber.App {
 		env.AccessTokenSecret,
 		env.AccessTokenExpiryHour,
 	)
+	sessionUseCase := usecase.NewSessionUseCase(sessionRepository)
 
 	healthController := controller.NewHealthController(healthUseCase)
 	accountController := controller.NewAccountController(accountUseCase)
+	sessionController := controller.NewSessionController(sessionUseCase)
 
 	api := app.Group("/api")
 	v1 := api.Group("/v1")
 	routes.NewHealthRoute(v1, healthController)
 	routes.NewAccountRoutes(v1, accountController)
+	routes.NewSessionRoutes(v1, sessionController)
 
 	return app
 }
