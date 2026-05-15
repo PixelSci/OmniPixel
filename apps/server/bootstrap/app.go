@@ -9,7 +9,6 @@ import (
 
 	"omni-pixel/api/controller"
 	"omni-pixel/api/routes"
-	"omni-pixel/internal"
 	"omni-pixel/repository"
 	"omni-pixel/usecase"
 )
@@ -28,25 +27,21 @@ func NewApp(env *Env, db *pgxpool.Pool) *fiber.App {
 
 	timeout := time.Duration(env.ContextTimeout) * time.Second
 	userRepository := repository.NewUserRepository(db, timeout)
-	sessionRepository := repository.NewSessionRepository(db, timeout)
-	chatCompletionClient := internal.NewChatCompletionClient(timeout)
-	signinUsecase := usecase.NewSigninUsecase(
+
+	healthUseCase := usecase.NewHealthUseCase()
+	accountUseCase := usecase.NewAccountUseCase(
 		userRepository,
 		env.AccessTokenSecret,
 		env.AccessTokenExpiryHour,
 	)
-	sessionUsecase := usecase.NewSessionUsecase(sessionRepository, chatCompletionClient)
-	signinController := controller.NewSigninController(signinUsecase)
-	sessionController := controller.NewSessionController(sessionUsecase)
 
-	healthUseCase := usecase.NewHealthUseCase()
 	healthController := controller.NewHealthController(healthUseCase)
+	accountController := controller.NewAccountController(accountUseCase)
 
 	api := app.Group("/api")
 	v1 := api.Group("/v1")
-	routes.NewSigninRoute(v1, signinController)
-	routes.NewSessionRoute(v1, sessionController, env.AccessTokenSecret)
 	routes.NewHealthRoute(v1, healthController)
+	routes.NewAccountRoutes(v1, accountController)
 
 	return app
 }

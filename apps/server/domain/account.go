@@ -37,6 +37,10 @@ type SigninResponse struct {
 	User        User   `json:"user"`
 }
 
+type SignupRequest struct{}
+
+type SignupResponse struct{}
+
 type UserRepository interface {
 	FindByEmail(email string) (*User, error)
 	UpdateLastLogin(userID string) error

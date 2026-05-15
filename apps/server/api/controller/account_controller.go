@@ -9,15 +9,15 @@ import (
 	"omni-pixel/usecase"
 )
 
-type SigninController struct {
-	signinUsecase *usecase.SigninUsecase
+type AccountController struct {
+	accountUseCase *usecase.AccountUseCase
 }
 
-func NewSigninController(signinUsecase *usecase.SigninUsecase) *SigninController {
-	return &SigninController{signinUsecase: signinUsecase}
+func NewAccountController(accountUseCase *usecase.AccountUseCase) *AccountController {
+	return &AccountController{accountUseCase}
 }
 
-func (controller *SigninController) Signin(c fiber.Ctx) error {
+func (controller *AccountController) Signin(c fiber.Ctx) error {
 	var request domain.SigninRequest
 	if err := c.Bind().Body(&request); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
@@ -25,7 +25,7 @@ func (controller *SigninController) Signin(c fiber.Ctx) error {
 		})
 	}
 
-	response, err := controller.signinUsecase.Signin(request)
+	response, err := controller.accountUseCase.Signin(request)
 	if errors.Is(err, domain.ErrInvalidCredentials) {
 		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
 			"message": "invalid email or password",
@@ -43,4 +43,16 @@ func (controller *SigninController) Signin(c fiber.Ctx) error {
 	}
 
 	return c.Status(fiber.StatusOK).JSON(response)
+}
+
+func (controller *AccountController) Signup(c fiber.Ctx) error {
+	var request domain.SigninRequest
+
+	if err := c.Bind().Body(&request); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"message": "invalid request body",
+		})
+	}
+
+	return nil
 }
