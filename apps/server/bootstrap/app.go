@@ -4,10 +4,10 @@ import (
 	"time"
 
 	"github.com/gofiber/fiber/v3"
-	"github.com/gofiber/fiber/v3/middleware/cors"
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"omni-pixel/api/controller"
+	"omni-pixel/api/middleware"
 	"omni-pixel/api/routes"
 	"omni-pixel/repository"
 	"omni-pixel/usecase"
@@ -18,12 +18,7 @@ func NewApp(env *Env, db *pgxpool.Pool) *fiber.App {
 		AppName: "OmniPixel Server",
 	})
 
-	app.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"http://localhost:5173", "http://localhost:3000"},
-		AllowMethods:     []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
-		AllowHeaders:     []string{"Origin", "Content-Type", "Accept", "Authorization"},
-		AllowCredentials: true,
-	}))
+	app.Use(middleware.CORSMiddleware())
 
 	timeout := time.Duration(env.ContextTimeout) * time.Second
 	userRepository := repository.NewUserRepository(db, timeout)
@@ -43,9 +38,12 @@ func NewApp(env *Env, db *pgxpool.Pool) *fiber.App {
 
 	api := app.Group("/api")
 	v1 := api.Group("/v1")
+
 	routes.NewHealthRoute(v1, healthController)
 	routes.NewAccountRoutes(v1, accountController)
-	routes.NewSessionRoutes(v1, sessionController)
+
+	auth := v1.Group("", middleware.JWTAuthMiddleware(env.AccessTokenSecret))
+	routes.NewSessionRoutes(auth, sessionController)
 
 	return app
 }
