@@ -11,22 +11,22 @@ import (
 	"omni-pixel/domain"
 )
 
-type SessionRepository struct {
+type ConversationRepository struct {
 	db      *pgxpool.Pool
 	timeout time.Duration
 }
 
-func NewSessionRepository(db *pgxpool.Pool, timeout time.Duration) *SessionRepository {
-	return &SessionRepository{db: db, timeout: timeout}
+func NewConversationRepository(db *pgxpool.Pool, timeout time.Duration) *ConversationRepository {
+	return &ConversationRepository{db: db, timeout: timeout}
 }
 
-func (r *SessionRepository) ListByUserID(userID string) ([]domain.SessionListItem, error) {
+func (r *ConversationRepository) ListByUserID(userID string) ([]domain.ConversationListItem, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), r.timeout)
 	defer cancel()
 
 	query := `
 		SELECT id, title, preview, model, updated_at, last_chat_at
-		FROM sessions
+		FROM conversations
 		WHERE user_id = $1
 		ORDER BY COALESCE(last_chat_at, updated_at) DESC
 	`
@@ -37,81 +37,81 @@ func (r *SessionRepository) ListByUserID(userID string) ([]domain.SessionListIte
 	}
 	defer rows.Close()
 
-	sessions := make([]domain.SessionListItem, 0)
+	conversations := make([]domain.ConversationListItem, 0)
 	for rows.Next() {
-		var session domain.SessionListItem
+		var conversation domain.ConversationListItem
 		if err := rows.Scan(
-			&session.ID,
-			&session.Title,
-			&session.Preview,
-			&session.Model,
-			&session.UpdatedAt,
-			&session.LastChatAt,
+			&conversation.ID,
+			&conversation.Title,
+			&conversation.Preview,
+			&conversation.Model,
+			&conversation.UpdatedAt,
+			&conversation.LastChatAt,
 		); err != nil {
 			return nil, err
 		}
-		sessions = append(sessions, session)
+		conversations = append(conversations, conversation)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
 
-	return sessions, nil
+	return conversations, nil
 }
 
-func (r *SessionRepository) FindByID(sessionID string, userID string) (*domain.Session, error) {
+func (r *ConversationRepository) FindByID(conversationID string, userID string) (*domain.Conversation, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), r.timeout)
 	defer cancel()
 
 	query := `
 		SELECT id, user_id, title, preview, model, chat_content, created_at, updated_at, last_chat_at
-		FROM sessions
+		FROM conversations
 		WHERE id = $1 AND user_id = $2
 		LIMIT 1
 	`
 
-	var session domain.Session
-	err := r.db.QueryRow(ctx, query, sessionID, userID).Scan(
-		&session.ID,
-		&session.UserID,
-		&session.Title,
-		&session.Preview,
-		&session.Model,
-		&session.ChatContent,
-		&session.CreatedAt,
-		&session.UpdatedAt,
-		&session.LastChatAt,
+	var conversation domain.Conversation
+	err := r.db.QueryRow(ctx, query, conversationID, userID).Scan(
+		&conversation.ID,
+		&conversation.UserID,
+		&conversation.Title,
+		&conversation.Preview,
+		&conversation.Model,
+		&conversation.ChatContent,
+		&conversation.CreatedAt,
+		&conversation.UpdatedAt,
+		&conversation.LastChatAt,
 	)
 	if errors.Is(err, pgx.ErrNoRows) {
-		return nil, domain.ErrSessionNotFound
+		return nil, domain.ErrConversationNotFound
 	}
 	if err != nil {
 		return nil, err
 	}
 
-	return &session, nil
+	return &conversation, nil
 }
 
-func (r *SessionRepository) Create(session domain.Session) (*domain.Session, error) {
+func (r *ConversationRepository) Create(conversation domain.Conversation) (*domain.Conversation, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), r.timeout)
 	defer cancel()
 
 	query := `
-		INSERT INTO sessions (id, user_id, title, preview, model, chat_content)
+		INSERT INTO conversations (id, user_id, title, preview, model, chat_content)
 		VALUES ($1, $2, $3, $4, $5, $6::jsonb)
 		RETURNING id, user_id, title, preview, model, chat_content, created_at, updated_at, last_chat_at
 	`
 
-	var created domain.Session
+	var created domain.Conversation
 	err := r.db.QueryRow(
 		ctx,
 		query,
-		session.ID,
-		session.UserID,
-		session.Title,
-		session.Preview,
-		session.Model,
-		string(session.ChatContent),
+		conversation.ID,
+		conversation.UserID,
+		conversation.Title,
+		conversation.Preview,
+		conversation.Model,
+		string(conversation.ChatContent),
 	).Scan(
 		&created.ID,
 		&created.UserID,
@@ -130,18 +130,18 @@ func (r *SessionRepository) Create(session domain.Session) (*domain.Session, err
 	return &created, nil
 }
 
-func (r *SessionRepository) SaveChatContent(sessionID string, userID string, chatContent []byte, preview string) error {
+func (r *ConversationRepository) SaveChatContent(conversationID string, userID string, chatContent []byte, preview string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), r.timeout)
 	defer cancel()
 
 	commandTag, err := r.db.Exec(
 		ctx,
 		`
-			UPDATE sessions
+			UPDATE conversations
 			SET chat_content = $3::jsonb, preview = $4, last_chat_at = now(), updated_at = now()
 			WHERE id = $1 AND user_id = $2
 		`,
-		sessionID,
+		conversationID,
 		userID,
 		string(chatContent),
 		preview,
@@ -150,27 +150,27 @@ func (r *SessionRepository) SaveChatContent(sessionID string, userID string, cha
 		return err
 	}
 	if commandTag.RowsAffected() == 0 {
-		return domain.ErrSessionNotFound
+		return domain.ErrConversationNotFound
 	}
 
 	return nil
 }
 
-func (r *SessionRepository) Delete(sessionID string, userID string) error {
+func (r *ConversationRepository) Delete(conversationID string, userID string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), r.timeout)
 	defer cancel()
 
 	commandTag, err := r.db.Exec(
 		ctx,
-		`DELETE FROM sessions WHERE id = $1 AND user_id = $2`,
-		sessionID,
+		`DELETE FROM conversations WHERE id = $1 AND user_id = $2`,
+		conversationID,
 		userID,
 	)
 	if err != nil {
 		return err
 	}
 	if commandTag.RowsAffected() == 0 {
-		return domain.ErrSessionNotFound
+		return domain.ErrConversationNotFound
 	}
 
 	return nil

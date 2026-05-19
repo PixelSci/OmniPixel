@@ -12,10 +12,10 @@ import (
 )
 
 type Providers struct {
-	ENV               *Env
-	HealthController  *controller.HealthController
-	AccountController *controller.AccountController
-	SessionController *controller.SessionController
+	ENV                    *Env
+	HealthController       *controller.HealthController
+	AccountController      *controller.AccountController
+	ConversationController *controller.ConversationController
 }
 
 func NewProviders() *Providers {
@@ -26,7 +26,7 @@ func NewProviders() *Providers {
 	timeout := time.Duration(env.ContextTimeout) * time.Second
 
 	userRepository := repository.NewUserRepository(db, timeout)
-	sessionRepository := repository.NewSessionRepository(db, timeout)
+	conversationRepository := repository.NewConversationRepository(db, timeout)
 
 	healthUseCase := usecase.NewHealthUseCase()
 	accountUseCase := usecase.NewAccountUseCase(
@@ -34,13 +34,13 @@ func NewProviders() *Providers {
 		env.AccessTokenSecret,
 		env.AccessTokenExpiryHour,
 	)
-	sessionUseCase := usecase.NewSessionUseCase(sessionRepository)
+	conversationUseCase := usecase.NewConversationUseCase(conversationRepository)
 
 	return &Providers{
-		ENV:               env,
-		HealthController:  controller.NewHealthController(healthUseCase),
-		AccountController: controller.NewAccountController(accountUseCase),
-		SessionController: controller.NewSessionController(sessionUseCase),
+		ENV:                    env,
+		HealthController:       controller.NewHealthController(healthUseCase),
+		AccountController:      controller.NewAccountController(accountUseCase),
+		ConversationController: controller.NewConversationController(conversationUseCase),
 	}
 }
 

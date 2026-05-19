@@ -29,7 +29,7 @@ func NewApp() *BootStrap {
 	routes.NewAccountRoutes(v1, providers.AccountController)
 
 	auth := v1.Group("", middleware.JWTAuthMiddleware(providers.ENV.AccessTokenSecret))
-	routes.NewSessionRoutes(auth, providers.SessionController)
+	routes.NewConversationRoutes(auth, providers.ConversationController)
 
 	return &BootStrap{app, providers}
 }
