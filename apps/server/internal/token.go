@@ -6,14 +6,20 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/google/uuid"
 
 	"omni-pixel/domain"
 )
 
 func CreateAccessToken(user *domain.User, secret string, expiry int) (accessToken string, err error) {
+	uid, err := uuid.Parse(user.ID)
+	if err != nil {
+		return "", err
+	}
+
 	now := time.Now()
 	claims := domain.JwtCustomClaims{
-		UserID: user.ID,
+		UserID: uid,
 		Email:  user.Email,
 		RegisteredClaims: jwt.RegisteredClaims{
 			Subject:   user.ID,
