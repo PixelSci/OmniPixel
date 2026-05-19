@@ -5,6 +5,7 @@ import (
 
 	"github.com/gofiber/fiber/v3"
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/google/uuid"
 
 	"omni-pixel/domain"
 )
@@ -29,8 +30,8 @@ func JWTAuthMiddleware(secret string) fiber.Handler {
 			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"message": "invalid token"})
 		}
 
-		fiber.Locals(c, "user_id", claims.UserID)
-		fiber.Locals(c, "email", claims.Email)
+		fiber.Locals[uuid.UUID](c, "user_id", claims.UserID)
+		fiber.Locals[string](c, "email", claims.Email)
 		return c.Next()
 	}
 }

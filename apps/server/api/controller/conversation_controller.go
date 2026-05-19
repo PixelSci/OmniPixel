@@ -2,6 +2,7 @@ package controller
 
 import (
 	"github.com/gofiber/fiber/v3"
+	"github.com/google/uuid"
 
 	"omni-pixel/usecase"
 )
@@ -15,5 +16,11 @@ func NewConversationController(conversationUseCase *usecase.ConversationUseCase)
 }
 
 func (controller *ConversationController) ListConversations(c fiber.Ctx) error {
-	return c.Status(fiber.StatusOK).JSON(fiber.Map{"data": "success"})
+	userId := fiber.Locals[uuid.UUID](c, "user_id")
+	conversations, err := controller.conversationUseCase.ListConversations(userId)
+	if err != nil {
+		return err
+	}
+
+	return c.JSON(conversations)
 }

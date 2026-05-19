@@ -2,6 +2,8 @@ package usecase
 
 import (
 	"omni-pixel/domain"
+
+	"github.com/google/uuid"
 )
 
 const defaultConversationTitle = "New Chat"
@@ -15,11 +17,11 @@ func NewConversationUseCase(conversationRepository domain.ConversationRepository
 	return &ConversationUseCase{conversationRepository}
 }
 
-func (u *ConversationUseCase) ListConversations(userID string) (*domain.ConversationListResponse, error) {
+func (u *ConversationUseCase) ListConversations(userID uuid.UUID) (*[]domain.Conversation, error) {
 	conversations, err := u.conversationRepository.ListByUserID(userID)
 	if err != nil {
 		return nil, err
 	}
 
-	return &domain.ConversationListResponse{Conversations: conversations}, nil
+	return &conversations, nil
 }
