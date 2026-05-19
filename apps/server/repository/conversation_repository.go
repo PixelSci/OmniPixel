@@ -1,8 +1,6 @@
 package repository
 
 import (
-	"time"
-
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 
@@ -10,12 +8,11 @@ import (
 )
 
 type ConversationRepository struct {
-	db      *gorm.DB
-	timeout time.Duration
+	db *gorm.DB
 }
 
-func NewConversationRepository(db *gorm.DB, timeout time.Duration) *ConversationRepository {
-	return &ConversationRepository{db: db, timeout: timeout}
+func NewConversationRepository(db *gorm.DB) *ConversationRepository {
+	return &ConversationRepository{db: db}
 }
 
 func (r *ConversationRepository) ListByUserID(userID uuid.UUID) ([]domain.Conversation, error) {
