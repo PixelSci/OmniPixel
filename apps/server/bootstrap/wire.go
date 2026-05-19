@@ -2,13 +2,12 @@ package bootstrap
 
 import (
 	"log"
-	"time"
 
 	"omni-pixel/api/controller"
 	"omni-pixel/repository"
 	"omni-pixel/usecase"
 
-	"github.com/jackc/pgx/v5/pgxpool"
+	"gorm.io/gorm"
 )
 
 type Providers struct {
@@ -21,12 +20,9 @@ type Providers struct {
 func NewProviders() *Providers {
 	env := newEnv()
 	db := newDB(env)
-	defer db.Close()
 
-	timeout := time.Duration(env.ContextTimeout) * time.Second
-
-	userRepository := repository.NewUserRepository(db, timeout)
-	conversationRepository := repository.NewConversationRepository(db, timeout)
+	userRepository := repository.NewUserRepository(db)
+	conversationRepository := repository.NewConversationRepository(db)
 
 	healthUseCase := usecase.NewHealthUseCase()
 	accountUseCase := usecase.NewAccountUseCase(
@@ -52,8 +48,8 @@ func newEnv() *Env {
 	return env
 }
 
-func newDB(env *Env) *pgxpool.Pool {
-	db, err := NewPostgresPool(env)
+func newDB(env *Env) *gorm.DB {
+	db, err := NewPostgresDB(env)
 	if err != nil {
 		log.Fatalf("failed to connect database: %v", err)
 	}

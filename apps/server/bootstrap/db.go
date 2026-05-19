@@ -1,13 +1,14 @@
 package bootstrap
 
 import (
-	"context"
 	"fmt"
+	"omni-pixel/domain"
 
-	"github.com/jackc/pgx/v5/pgxpool"
+	"gorm.io/driver/postgres"
+	"gorm.io/gorm"
 )
 
-func NewPostgresPool(env *Env) (*pgxpool.Pool, error) {
+func NewPostgresDB(env *Env) (*gorm.DB, error) {
 	dsn := fmt.Sprintf(
 		"postgres://%s:%s@%s:%s/%s?sslmode=disable",
 		env.DBUser,
@@ -17,15 +18,18 @@ func NewPostgresPool(env *Env) (*pgxpool.Pool, error) {
 		env.DBName,
 	)
 
-	pool, err := pgxpool.New(context.Background(), dsn)
+	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {
 		return nil, err
 	}
 
-	if err := pool.Ping(context.Background()); err != nil {
-		pool.Close()
+	if err := db.AutoMigrate(
+		&domain.User{},
+		&domain.Conversation{},
+		&domain.Message{},
+	); err != nil {
 		return nil, err
 	}
 
-	return pool, nil
+	return db, nil
 }
