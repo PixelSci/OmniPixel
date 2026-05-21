@@ -4,6 +4,7 @@ import (
 	"log"
 
 	"omni-pixel/api/controller"
+	"omni-pixel/internal/ai"
 	"omni-pixel/repository"
 	"omni-pixel/usecase"
 
@@ -30,7 +31,8 @@ func NewProviders() *Providers {
 		env.AccessTokenSecret,
 		env.AccessTokenExpiryHour,
 	)
-	conversationUseCase := usecase.NewConversationUseCase(conversationRepository)
+	aiProvider := ai.NewOpenAIProvider(env.AIBaseURL, env.AIAPIKey)
+	conversationUseCase := usecase.NewConversationUseCase(conversationRepository, aiProvider)
 
 	return &Providers{
 		ENV:                    env,
