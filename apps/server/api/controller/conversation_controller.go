@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"bufio"
 	"encoding/json"
 	"fmt"
 
@@ -45,24 +46,30 @@ func (controller *ConversationController) GetConversation(c fiber.Ctx) error {
 	return c.Status(fiber.StatusOK).JSON(result)
 }
 
-type sseAdapter struct {
-	c fiber.Ctx
+type sseStreamWriter struct {
+	w *bufio.Writer
 }
 
-func (w *sseAdapter) WriteToken(token string) error {
+func (s *sseStreamWriter) WriteToken(token string) error {
 	data, _ := json.Marshal(map[string]string{"token": token})
-	_, err := fmt.Fprintf(w.c, "data: %s\n\n", data)
-	return err
+	_, err := fmt.Fprintf(s.w, "data: %s\n\n", data)
+	if err != nil {
+		return err
+	}
+	return s.w.Flush()
 }
 
-func (w *sseAdapter) WriteDone(conversationID, messageID uuid.UUID) error {
+func (s *sseStreamWriter) WriteDone(conversationID, messageID uuid.UUID) error {
 	data, _ := json.Marshal(map[string]interface{}{
 		"done":            true,
 		"conversation_id": conversationID.String(),
 		"message_id":      messageID.String(),
 	})
-	_, err := fmt.Fprintf(w.c, "data: %s\n\n", data)
-	return err
+	_, err := fmt.Fprintf(s.w, "data: %s\n\n", data)
+	if err != nil {
+		return err
+	}
+	return s.w.Flush()
 }
 
 func (controller *ConversationController) Chat(c fiber.Ctx) error {
@@ -71,16 +78,18 @@ func (controller *ConversationController) Chat(c fiber.Ctx) error {
 		return response.Write(c, response.ErrInvalidRequest)
 	}
 
+	userID := fiber.Locals[uuid.UUID](c, "user_id")
+
 	c.Set("Content-Type", "text/event-stream")
 	c.Set("Cache-Control", "no-cache")
 	c.Set("Connection", "keep-alive")
 
-	userID := fiber.Locals[uuid.UUID](c, "user_id")
-	writer := &sseAdapter{c: c}
-
-	if err := controller.conversationUseCase.Chat(userID, request, writer); err != nil {
-		return response.DomainError(c, err)
-	}
-
-	return nil
+	return c.Status(fiber.StatusOK).SendStreamWriter(func(w *bufio.Writer) {
+		writer := &sseStreamWriter{w: w}
+		if err := controller.conversationUseCase.Chat(userID, request, writer); err != nil {
+			data, _ := json.Marshal(map[string]string{"error": err.Error()})
+			fmt.Fprintf(w, "data: %s\n\n", data)
+			w.Flush()
+		}
+	})
 }
