@@ -1,11 +1,10 @@
 package controller
 
 import (
-	"errors"
-
 	"github.com/gofiber/fiber/v3"
 
 	"omni-pixel/domain"
+	"omni-pixel/internal/response"
 	"omni-pixel/usecase"
 )
 
@@ -20,38 +19,21 @@ func NewAccountController(accountUseCase *usecase.AccountUseCase) *AccountContro
 func (controller *AccountController) Signin(c fiber.Ctx) error {
 	var request domain.SigninRequest
 	if err := c.Bind().Body(&request); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"message": "invalid request body",
-		})
+		return response.Write(c, response.ErrInvalidRequest)
 	}
 
-	response, err := controller.accountUseCase.Signin(request)
-	if errors.Is(err, domain.ErrInvalidCredentials) {
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-			"message": "invalid email or password",
-		})
-	}
-	if errors.Is(err, domain.ErrUserInactive) {
-		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
-			"message": "user is not active",
-		})
-	}
+	result, err := controller.accountUseCase.Signin(request)
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"message": "failed to sign in",
-		})
+		return response.DomainError(c, err)
 	}
 
-	return c.Status(fiber.StatusOK).JSON(response)
+	return c.Status(fiber.StatusOK).JSON(result)
 }
 
 func (controller *AccountController) Signup(c fiber.Ctx) error {
 	var request domain.SigninRequest
-
 	if err := c.Bind().Body(&request); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"message": "invalid request body",
-		})
+		return response.Write(c, response.ErrInvalidRequest)
 	}
 
 	return nil

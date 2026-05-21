@@ -1,12 +1,10 @@
 package controller
 
 import (
-	"errors"
-
 	"github.com/gofiber/fiber/v3"
 	"github.com/google/uuid"
 
-	"omni-pixel/domain"
+	"omni-pixel/internal/response"
 	"omni-pixel/usecase"
 )
 
@@ -31,28 +29,14 @@ func (controller *ConversationController) ListConversations(c fiber.Ctx) error {
 func (controller *ConversationController) GetConversation(c fiber.Ctx) error {
 	conversationID, err := uuid.Parse(c.Params("conversation_id"))
 	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"message": "invalid conversation id",
-		})
+		return response.Write(c, response.ErrInvalidConvID)
 	}
 
 	userID := fiber.Locals[uuid.UUID](c, "user_id")
-	response, err := controller.conversationUseCase.GetConversation(userID, conversationID)
-	if errors.Is(err, domain.ErrInvalidConversationID) {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"message": "invalid conversation id",
-		})
-	}
-	if errors.Is(err, domain.ErrConversationNotFound) {
-		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
-			"message": "conversation not found",
-		})
-	}
+	result, err := controller.conversationUseCase.GetConversation(userID, conversationID)
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"message": "failed to get conversation",
-		})
+		return response.DomainError(c, err)
 	}
 
-	return c.Status(fiber.StatusOK).JSON(response)
+	return c.Status(fiber.StatusOK).JSON(result)
 }

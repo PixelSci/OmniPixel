@@ -8,18 +8,19 @@ import (
 	"github.com/google/uuid"
 
 	"omni-pixel/domain"
+	"omni-pixel/internal/response"
 )
 
 func JWTAuthMiddleware(secret string) fiber.Handler {
 	return func(c fiber.Ctx) error {
 		authHeader := c.Get("Authorization")
 		if authHeader == "" {
-			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"message": "missing authorization header"})
+			return response.Write(c, response.ErrUnauthorized)
 		}
 
 		tokenString := strings.TrimSpace(strings.TrimPrefix(authHeader, "Bearer "))
 		if tokenString == "" || tokenString == authHeader {
-			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"message": "invalid authorization header"})
+			return response.Write(c, response.ErrUnauthorized)
 		}
 
 		claims := &domain.JwtCustomClaims{}
@@ -27,7 +28,7 @@ func JWTAuthMiddleware(secret string) fiber.Handler {
 			return []byte(secret), nil
 		}, jwt.WithValidMethods([]string{jwt.SigningMethodHS256.Alg()}))
 		if err != nil || !token.Valid {
-			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"message": "invalid token"})
+			return response.Write(c, response.ErrUnauthorized)
 		}
 
 		fiber.Locals[uuid.UUID](c, "user_id", claims.UserID)
