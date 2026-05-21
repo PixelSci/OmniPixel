@@ -1,20 +1,16 @@
 package domain
 
 import (
+	"errors"
 	"time"
 
 	"github.com/google/uuid"
 )
 
-// var (
-//
-//	ErrConversationNotFound  = errors.New("conversation not found")
-//	ErrInvalidConversationID = errors.New("invalid conversation id")
-//	ErrInvalidPrompt         = errors.New("invalid prompt")
-//	ErrInvalidAIConfig       = errors.New("invalid ai config")
-//	ErrUnsupportedAIProvider = errors.New("unsupported ai provider")
-//
-// )
+var (
+	ErrConversationNotFound  = errors.New("conversation not found")
+	ErrInvalidConversationID = errors.New("invalid conversation id")
+)
 
 type Conversation struct {
 	ID         uuid.UUID `json:"id" gorm:"primaryKey;type:uuid;column:id"`
@@ -36,6 +32,18 @@ type Message struct {
 	CreatedAt      time.Time `json:"created_at" gorm:"column:created_at"`
 }
 
+type ConversationDetailResponse struct {
+	ID         uuid.UUID `json:"id"`
+	Title      string    `json:"title"`
+	IsVisible  bool      `json:"is_visible"`
+	IsArchived bool      `json:"is_archived"`
+	CreatedAt  time.Time `json:"created_at"`
+	UpdatedAt  time.Time `json:"updated_at"`
+	Messages   []Message `json:"messages"`
+}
+
 type ConversationRepository interface {
 	ListByUserID(userID uuid.UUID) ([]Conversation, error)
+	FindByID(conversationID, userID uuid.UUID) (*Conversation, error)
+	ListMessagesByConversationID(conversationID uuid.UUID) ([]Message, error)
 }
