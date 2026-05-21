@@ -42,8 +42,35 @@ type ConversationDetailResponse struct {
 	Messages   []Message `json:"messages"`
 }
 
+type AIChatMessage struct {
+	Role    string `json:"role"`
+	Content string `json:"content"`
+}
+
+type AIStreamChunk struct {
+	Token string
+	Done  bool
+}
+
+type ChatRequest struct {
+	ConversationID *uuid.UUID `json:"conversation_id"`
+	Message        string     `json:"message"`
+	ModelID        string     `json:"model_id"`
+}
+
+type StreamWriter interface {
+	WriteToken(token string) error
+	WriteDone(conversationID, messageID uuid.UUID) error
+}
+
+type AIProvider interface {
+	ChatStream(messages []AIChatMessage, modelID string) (<-chan AIStreamChunk, error)
+}
+
 type ConversationRepository interface {
 	ListByUserID(userID uuid.UUID) ([]Conversation, error)
 	FindByID(conversationID, userID uuid.UUID) (*Conversation, error)
 	ListMessagesByConversationID(conversationID uuid.UUID) ([]Message, error)
+	Insert(conversation *Conversation) error
+	InsertMessage(message *Message) error
 }
