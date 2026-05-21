@@ -1,6 +1,8 @@
 package repository
 
 import (
+	"errors"
+
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 
@@ -25,4 +27,30 @@ func (r *ConversationRepository) ListByUserID(userID uuid.UUID) ([]domain.Conver
 		return nil, err
 	}
 	return conversations, nil
+}
+
+func (r *ConversationRepository) FindByID(conversationID, userID uuid.UUID) (*domain.Conversation, error) {
+	var conversation domain.Conversation
+	err := r.db.
+		Where("id = ? AND user_id = ? AND is_visible = ?", conversationID, userID, true).
+		First(&conversation).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, domain.ErrConversationNotFound
+	}
+	if err != nil {
+		return nil, err
+	}
+	return &conversation, nil
+}
+
+func (r *ConversationRepository) ListMessagesByConversationID(conversationID uuid.UUID) ([]domain.Message, error) {
+	var messages []domain.Message
+	err := r.db.
+		Where("conversation_id = ?", conversationID).
+		Order("created_at ASC").
+		Find(&messages).Error
+	if err != nil {
+		return nil, err
+	}
+	return messages, nil
 }
