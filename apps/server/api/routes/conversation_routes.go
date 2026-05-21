@@ -9,5 +9,5 @@ import (
 func NewConversationRoutes(router fiber.Router, conversationController *controller.ConversationController) {
 	router.Post("/conversation", func() {})
 	router.Get("/conversations", conversationController.ListConversations)
-	router.Get("/conversations/:conversation_id", func() {})
+	router.Get("/conversations/:conversation_id", conversationController.GetConversation)
 }

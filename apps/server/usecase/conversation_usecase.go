@@ -25,3 +25,25 @@ func (u *ConversationUseCase) ListConversations(userID uuid.UUID) (*[]domain.Con
 
 	return &conversations, nil
 }
+
+func (u *ConversationUseCase) GetConversation(userID, conversationID uuid.UUID) (*domain.ConversationDetailResponse, error) {
+	conversation, err := u.conversationRepository.FindByID(conversationID, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	messages, err := u.conversationRepository.ListMessagesByConversationID(conversationID)
+	if err != nil {
+		return nil, err
+	}
+
+	return &domain.ConversationDetailResponse{
+		ID:         conversation.ID,
+		Title:      conversation.Title,
+		IsVisible:  conversation.IsVisible,
+		IsArchived: conversation.IsArchived,
+		CreatedAt:  conversation.CreatedAt,
+		UpdatedAt:  conversation.UpdatedAt,
+		Messages:   messages,
+	}, nil
+}
