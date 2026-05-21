@@ -54,3 +54,11 @@ func (r *ConversationRepository) ListMessagesByConversationID(conversationID uui
 	}
 	return messages, nil
 }
+
+func (r *ConversationRepository) Insert(conversation *domain.Conversation) error {
+	return r.db.Create(conversation).Error
+}
+
+func (r *ConversationRepository) InsertMessage(message *domain.Message) error {
+	return r.db.Create(message).Error
+}

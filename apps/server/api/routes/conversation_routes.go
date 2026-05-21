@@ -7,7 +7,7 @@ import (
 )
 
 func NewConversationRoutes(router fiber.Router, conversationController *controller.ConversationController) {
-	router.Post("/conversation", func() {})
+	router.Post("/conversation", conversationController.Chat)
 	router.Get("/conversations", conversationController.ListConversations)
 	router.Get("/conversations/:conversation_id", conversationController.GetConversation)
 }
