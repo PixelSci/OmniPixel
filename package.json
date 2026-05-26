@@ -4,7 +4,7 @@
     "version": "0.0.0",
     "private": true,
     "scripts": {
-        "agents":"sh scripts/start-agents-team.sh",
+        "agents":"zsh scripts/start-agents-team.sh",
         "lint": "eslint",
         "lint:fix": "eslint --fix"
     },

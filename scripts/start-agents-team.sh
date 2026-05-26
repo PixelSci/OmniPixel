@@ -1,6 +1,6 @@
 #!/bin/zsh
 
-AGENTS_DIR="../agents"
+AGENTS_DIR="./agents"
 TEAMMATES=""
 
 # --- Interactive selection ---
