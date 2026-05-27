@@ -27,6 +27,8 @@ func NewPostgresDB(env *Env) (*gorm.DB, error) {
 		&domain.User{},
 		&domain.Conversation{},
 		&domain.Message{},
+		&domain.Provider{},
+		&domain.Model{},
 	); err != nil {
 		return nil, err
 	}
