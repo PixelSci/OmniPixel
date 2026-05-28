@@ -30,6 +30,8 @@ func NewApp() *BootStrap {
 
 	auth := v1.Group("", middleware.JWTAuthMiddleware(providers.ENV.AccessTokenSecret))
 	routes.NewConversationRoutes(auth, providers.ConversationController)
+	routes.NewProviderRoutes(auth, providers.ProviderController)
+	routes.NewModelRoutes(auth, providers.ModelController)
 
 	return &BootStrap{app, providers}
 }

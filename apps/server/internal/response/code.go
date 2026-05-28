@@ -8,8 +8,14 @@ const (
 	ErrCodeUserInactive       ErrorCode = 10002
 
 	// 20xxx Conversation
-	ErrCodeInvalidConvID       ErrorCode = 20001
+	ErrCodeInvalidConvID        ErrorCode = 20001
 	ErrCodeConversationNotFound ErrorCode = 20002
+
+	// 30xxx Provider
+	ErrCodeProviderNotFound ErrorCode = 30001
+
+	// 40xxx Model
+	ErrCodeModelNotFound ErrorCode = 40001
 
 	// 90xxx 系统/通用
 	ErrCodeInternalError  ErrorCode = 90000
@@ -19,7 +25,7 @@ const (
 
 func HTTPStatus(code ErrorCode) int {
 	switch code / 1000 {
-	case 10, 20:
+	case 10, 20, 30, 40:
 		switch code {
 		case ErrCodeInvalidCredentials:
 			return 401
@@ -27,7 +33,7 @@ func HTTPStatus(code ErrorCode) int {
 			return 403
 		case ErrCodeInvalidConvID:
 			return 400
-		case ErrCodeConversationNotFound:
+		case ErrCodeConversationNotFound, ErrCodeProviderNotFound, ErrCodeModelNotFound:
 			return 404
 		default:
 			return 400

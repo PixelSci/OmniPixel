@@ -1,9 +1,14 @@
 package domain
 
 import (
+	"errors"
 	"time"
 
 	"github.com/google/uuid"
+)
+
+var (
+	ErrProviderNotFound = errors.New("provider not found")
 )
 
 type Provider struct {
@@ -13,4 +18,16 @@ type Provider struct {
 	APIKey    string    `json:"api_key" gorm:"column:api_key"`
 	CreatedAt time.Time `json:"created_at" gorm:"column:created_at"`
 	UpdatedAt time.Time `json:"updated_at" gorm:"column:updated_at"`
+}
+
+type ProviderResponse struct {
+	ID        uuid.UUID `json:"id"`
+	Name      string    `json:"name"`
+	BaseURL   string    `json:"base_url"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+}
+
+type ProviderRepository interface {
+	FindAll() ([]Provider, error)
 }

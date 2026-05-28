@@ -16,6 +16,8 @@ type Providers struct {
 	HealthController       *controller.HealthController
 	AccountController      *controller.AccountController
 	ConversationController *controller.ConversationController
+	ProviderController     *controller.ProviderController
+	ModelController        *controller.ModelController
 }
 
 func NewProviders() *Providers {
@@ -24,6 +26,8 @@ func NewProviders() *Providers {
 
 	userRepository := repository.NewUserRepository(db)
 	conversationRepository := repository.NewConversationRepository(db)
+	providerRepository := repository.NewProviderRepository(db)
+	modelRepository := repository.NewModelRepository(db)
 
 	healthUseCase := usecase.NewHealthUseCase()
 	accountUseCase := usecase.NewAccountUseCase(
@@ -33,12 +37,16 @@ func NewProviders() *Providers {
 	)
 	aiProvider := ai.NewOpenAIProvider(env.AIBaseURL, env.AIAPIKey)
 	conversationUseCase := usecase.NewConversationUseCase(conversationRepository, aiProvider)
+	providerUseCase := usecase.NewProviderUseCase(providerRepository)
+	modelUseCase := usecase.NewModelUseCase(modelRepository)
 
 	return &Providers{
 		ENV:                    env,
 		HealthController:       controller.NewHealthController(healthUseCase),
 		AccountController:      controller.NewAccountController(accountUseCase),
 		ConversationController: controller.NewConversationController(conversationUseCase),
+		ProviderController:     controller.NewProviderController(providerUseCase),
+		ModelController:        controller.NewModelController(modelUseCase),
 	}
 }
 
