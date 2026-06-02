@@ -21,8 +21,8 @@ func (r *ConversationRepository) ListByUserID(userID uuid.UUID) ([]domain.Conver
 	var conversations []domain.Conversation
 	err := r.db.
 		Where("user_id = ?", userID).
-		Order("COALESCE(last_chat_at, updated_at) DESC").
-		Find(&domain.Conversation{}).Error
+		Order("updated_at DESC").
+		Find(&conversations).Error
 	if err != nil {
 		return nil, err
 	}
