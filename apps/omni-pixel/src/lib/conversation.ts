@@ -24,6 +24,7 @@ export interface ConversationDetail {
     title: string
     is_visible: boolean
     is_archived: boolean
+    generating: boolean
     created_at: string
     updated_at: string
     messages: ChatMessage[]
@@ -31,8 +32,8 @@ export interface ConversationDetail {
 
 export interface ChatRequest {
     conversation_id?: string | null
-    message: string
-    model_id: string
+    message?: string
+    model_id?: string
 }
 
 export function listConversations(): Promise<ConversationItem[]> {

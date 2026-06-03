@@ -65,6 +65,55 @@ async function handleSelect(id: string) {
     try {
         const detail = await getConversation(id)
         messages.value = detail.messages ?? []
+
+        if (detail.generating) {
+            // Resume streaming: the partial AI content is the last message
+            const lastMsg = messages.value[messages.value.length - 1]
+            if (lastMsg && lastMsg.type === 1) {
+                streamBuffer.value = lastMsg.content
+                messages.value = messages.value.slice(0, -1)
+            }
+
+            isLoading.value = true
+            abortController = new AbortController()
+
+            try {
+                await streamChat(
+                    { conversation_id: id },
+                    {
+                        onToken(token) { streamBuffer.value += token },
+                        onDone(conversationId, messageId) {
+                            messages.value.push({
+                                id: messageId,
+                                conversation_id: conversationId,
+                                user_id: '',
+                                content: streamBuffer.value,
+                                model_id: '',
+                                type: 1,
+                                created_at: new Date().toISOString(),
+                            })
+                            streamBuffer.value = ''
+                            scrollToBottom()
+                        },
+                        onError(err) {
+                            messages.value.push({
+                                id: `err-${Date.now()}`,
+                                conversation_id: id,
+                                user_id: '',
+                                content: err.message,
+                                model_id: '',
+                                type: 1,
+                                created_at: new Date().toISOString(),
+                            })
+                        },
+                    },
+                    abortController.signal,
+                )
+            } finally {
+                isLoading.value = false
+                abortController = null
+            }
+        }
     } catch {
         messages.value = []
     }
