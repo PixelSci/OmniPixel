@@ -1,3 +1,0 @@
--- chat_messages are stored as JSONB in sessions.chat_content
--- This file is intentionally empty; the Go server uses an embedded JSONB column.
--- See 002_create_sessions.sql for the sessions table definition.

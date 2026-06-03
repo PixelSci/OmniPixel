@@ -6,6 +6,7 @@ const (
 	// 10xxx Account
 	ErrCodeInvalidCredentials ErrorCode = 10001
 	ErrCodeUserInactive       ErrorCode = 10002
+	ErrCodeUserAlreadyExists  ErrorCode = 10003
 
 	// 20xxx Conversation
 	ErrCodeInvalidConvID        ErrorCode = 20001
@@ -31,6 +32,8 @@ func HTTPStatus(code ErrorCode) int {
 			return 401
 		case ErrCodeUserInactive:
 			return 403
+		case ErrCodeUserAlreadyExists:
+			return 409
 		case ErrCodeInvalidConvID:
 			return 400
 		case ErrCodeConversationNotFound, ErrCodeProviderNotFound, ErrCodeModelNotFound:

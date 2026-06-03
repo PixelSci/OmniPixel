@@ -31,10 +31,15 @@ func (controller *AccountController) Signin(c fiber.Ctx) error {
 }
 
 func (controller *AccountController) Signup(c fiber.Ctx) error {
-	var request domain.SigninRequest
+	var request domain.SignupRequest
 	if err := c.Bind().Body(&request); err != nil {
 		return response.Write(c, response.ErrInvalidRequest)
 	}
 
-	return nil
+	result, err := controller.accountUseCase.Signup(request)
+	if err != nil {
+		return response.DomainError(c, err)
+	}
+
+	return c.Status(fiber.StatusOK).JSON(result)
 }

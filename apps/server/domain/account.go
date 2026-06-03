@@ -8,6 +8,7 @@ import (
 var (
 	ErrInvalidCredentials = errors.New("invalid email or password")
 	ErrUserInactive       = errors.New("user is not active")
+	ErrUserAlreadyExists  = errors.New("user already exists")
 )
 
 type User struct {
@@ -37,11 +38,22 @@ type SigninResponse struct {
 	User        User   `json:"user"`
 }
 
-type SignupRequest struct{}
+type SignupRequest struct {
+	Username string `json:"username"`
+	Email    string `json:"email"`
+	Password string `json:"password"`
+}
 
-type SignupResponse struct{}
+type SignupResponse struct {
+	AccessToken string `json:"access_token"`
+	TokenType   string `json:"token_type"`
+	ExpiresIn   int    `json:"expires_in"`
+	User        User   `json:"user"`
+}
 
 type UserRepository interface {
 	FindByEmail(email string) (*User, error)
+	ExistsByEmail(email string) error
+	Create(user *User) error
 	UpdateLastLogin(userID string) error
 }
