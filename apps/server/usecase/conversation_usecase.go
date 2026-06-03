@@ -34,6 +34,10 @@ func (u *ConversationUseCase) DeleteConversation(userID, conversationID uuid.UUI
 	return u.conversationRepository.Delete(conversationID, userID)
 }
 
+func (u *ConversationUseCase) UpdateConversationTitle(userID, conversationID uuid.UUID, title string) error {
+	return u.conversationRepository.UpdateTitle(conversationID, userID, title)
+}
+
 func (u *ConversationUseCase) ListConversations(userID uuid.UUID) (*[]domain.Conversation, error) {
 	conversations, err := u.conversationRepository.ListByUserID(userID)
 	if err != nil {

@@ -10,5 +10,5 @@ func NewConversationRoutes(router fiber.Router, conversationController *controll
 	router.Post("/conversation", conversationController.Chat)
 	router.Get("/conversations", conversationController.ListConversations)
 	router.Get("/conversations/:conversation_id", conversationController.GetConversation)
-	router.Delete("/conversations/:conversation_id", conversationController.DeleteConversation)
+	router.Post("/conversations/:conversation_id", conversationController.ConversationAction)
 }

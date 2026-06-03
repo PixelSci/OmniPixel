@@ -46,18 +46,38 @@ func (controller *ConversationController) GetConversation(c fiber.Ctx) error {
 	return c.Status(fiber.StatusOK).JSON(result)
 }
 
-func (controller *ConversationController) DeleteConversation(c fiber.Ctx) error {
+func (controller *ConversationController) ConversationAction(c fiber.Ctx) error {
 	conversationID, err := uuid.Parse(c.Params("conversation_id"))
 	if err != nil {
 		return response.Write(c, response.ErrInvalidConvID)
 	}
 
-	userID := fiber.Locals[uuid.UUID](c, "user_id")
-	if err := controller.conversationUseCase.DeleteConversation(userID, conversationID); err != nil {
-		return response.DomainError(c, err)
+	var req domain.ConversationActionRequest
+	if err := c.Bind().Body(&req); err != nil {
+		return response.Write(c, response.ErrInvalidRequest)
 	}
 
-	return c.SendStatus(fiber.StatusNoContent)
+	userID := fiber.Locals[uuid.UUID](c, "user_id")
+
+	switch req.Action {
+	case "update":
+		if req.Title == "" {
+			return response.Write(c, response.ErrInvalidRequest)
+		}
+		if err := controller.conversationUseCase.UpdateConversationTitle(userID, conversationID, req.Title); err != nil {
+			return response.DomainError(c, err)
+		}
+		return c.Status(fiber.StatusOK).JSON(fiber.Map{"title": req.Title})
+
+	case "delete":
+		if err := controller.conversationUseCase.DeleteConversation(userID, conversationID); err != nil {
+			return response.DomainError(c, err)
+		}
+		return c.SendStatus(fiber.StatusNoContent)
+
+	default:
+		return response.Write(c, response.ErrInvalidRequest)
+	}
 }
 
 type sseStreamWriter struct {

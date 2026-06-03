@@ -59,6 +59,11 @@ type ChatRequest struct {
 	ModelID        string     `json:"model_id"`
 }
 
+type ConversationActionRequest struct {
+	Action string `json:"action"` // "update" | "delete"
+	Title  string `json:"title"`
+}
+
 type StreamWriter interface {
 	WriteToken(token string) error
 	WriteDone(conversationID, messageID uuid.UUID) error
@@ -74,5 +79,6 @@ type ConversationRepository interface {
 	ListMessagesByConversationID(conversationID uuid.UUID) ([]Message, error)
 	Insert(conversation *Conversation) error
 	InsertMessage(message *Message) error
+	UpdateTitle(conversationID, userID uuid.UUID, title string) error
 	Delete(conversationID, userID uuid.UUID) error
 }
