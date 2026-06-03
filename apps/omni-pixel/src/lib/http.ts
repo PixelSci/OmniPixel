@@ -12,7 +12,16 @@ const instance: AxiosInstance = axios.create({
 })
 
 instance.interceptors.request.use(
-    (config) => config,
+    (config) => {
+        const raw = localStorage.getItem('omni-pixel:access-token')
+        if (raw) {
+            try {
+                const token = JSON.parse(raw)
+                if (token) config.headers.Authorization = `Bearer ${token}`
+            } catch { /* ignore parse errors */ }
+        }
+        return config
+    },
     (error) => Promise.reject(error),
 )
 
