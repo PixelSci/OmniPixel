@@ -62,3 +62,16 @@ func (r *ConversationRepository) Insert(conversation *domain.Conversation) error
 func (r *ConversationRepository) InsertMessage(message *domain.Message) error {
 	return r.db.Create(message).Error
 }
+
+func (r *ConversationRepository) Delete(conversationID, userID uuid.UUID) error {
+	result := r.db.
+		Where("id = ? AND user_id = ?", conversationID, userID).
+		Delete(&domain.Conversation{})
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected == 0 {
+		return domain.ErrConversationNotFound
+	}
+	return nil
+}

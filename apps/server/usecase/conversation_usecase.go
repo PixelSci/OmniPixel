@@ -20,6 +20,10 @@ func NewConversationUseCase(conversationRepository domain.ConversationRepository
 	return &ConversationUseCase{conversationRepository: conversationRepository, aiProvider: aiProvider}
 }
 
+func (u *ConversationUseCase) DeleteConversation(userID, conversationID uuid.UUID) error {
+	return u.conversationRepository.Delete(conversationID, userID)
+}
+
 func (u *ConversationUseCase) ListConversations(userID uuid.UUID) (*[]domain.Conversation, error) {
 	conversations, err := u.conversationRepository.ListByUserID(userID)
 	if err != nil {

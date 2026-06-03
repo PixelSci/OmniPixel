@@ -73,4 +73,5 @@ type ConversationRepository interface {
 	ListMessagesByConversationID(conversationID uuid.UUID) ([]Message, error)
 	Insert(conversation *Conversation) error
 	InsertMessage(message *Message) error
+	Delete(conversationID, userID uuid.UUID) error
 }
