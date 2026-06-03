@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useDark, useNow, useToggle } from '@vueuse/core'
+import { useDark, useNow } from '@vueuse/core'
 import { Moon, Sun, Volume2 } from 'lucide-vue-next'
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import logo from '@/assets/logo.svg'
@@ -17,7 +17,58 @@ const props = withDefaults(defineProps<Props>(), {
 })
 
 const isDark = useDark()
-const toggleDark = useToggle(isDark)
+const isAnimating = ref(false)
+
+async function toggleTheme(event: MouseEvent) {
+    if (isAnimating.value) return
+
+    const isAppearanceTransition = 'startViewTransition' in document
+        && !window.matchMedia('(prefers-reduced-motion: reduce)').matches
+
+    if (!isAppearanceTransition) {
+        isDark.value = !isDark.value
+        return
+    }
+
+    isAnimating.value = true
+
+    const x = event.clientX
+    const y = event.clientY
+    const endRadius = Math.hypot(
+        Math.max(x, innerWidth - x),
+        Math.max(y, innerHeight - y),
+    )
+
+    const transition = document.startViewTransition(() => {
+        isDark.value = !isDark.value
+    })
+
+    transition.ready.then(() => {
+        const clipPath = [
+            `circle(0px at ${x}px ${y}px)`,
+            `circle(${endRadius}px at ${x}px ${y}px)`,
+        ]
+        document.documentElement.animate(
+            {
+                clipPath: isDark.value
+                    ? [...clipPath].reverse()
+                    : clipPath,
+            },
+            {
+                duration: 400,
+                easing: 'ease-out',
+                fill: 'forwards',
+                pseudoElement: isDark.value
+                    ? '::view-transition-old(root)'
+                    : '::view-transition-new(root)',
+            },
+        )
+    })
+
+    transition.finished.then(() => {
+        isAnimating.value = false
+    })
+}
 
 const now = useNow({ interval: 1000 })
 
@@ -237,7 +288,7 @@ onBeforeUnmount(() => {
                     variant="ghost"
                     :aria-label="isDark ? 'Switch to light mode' : 'Switch to dark mode'"
                     class="inline-flex h-[22px] w-7 cursor-default items-center justify-center rounded text-foreground transition-colors duration-100 hover:bg-[var(--hig-fill)]"
-                    @click="toggleDark()"
+                    @click="toggleTheme"
                 >
                     <Sun v-if="isDark" :size="13" :stroke-width="1.8" />
                     <Moon v-else :size="13" :stroke-width="1.8" />
