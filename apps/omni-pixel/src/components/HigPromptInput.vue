@@ -4,7 +4,7 @@ import { ArrowUp, ChevronDown, Globe, Mic, Paperclip, Square } from 'lucide-vue-
 import { computed, nextTick, ref, watchEffect } from 'vue'
 import { Button } from '@/components/ui/button'
 import { useModelSettings } from '@/composables/useModelSettings'
-import type { FeatureModel } from '@/composables/useModelSettings'
+import type { ChatModel } from '@/lib/model'
 
 interface Props {
     placeholder?: string
@@ -19,7 +19,7 @@ const props = withDefaults(defineProps<Props>(), {
 })
 
 const emit = defineEmits<{
-    send: [payload: { message: string, model: FeatureModel }]
+    send: [payload: { message: string, model: ChatModel }]
     stop: []
     attach: []
 }>()
@@ -29,15 +29,15 @@ const { textarea, input: text, triggerResize } = useTextareaAutosize({
 })
 
 const { chatModels } = useModelSettings()
-const selectedModelId = ref('gpt-4o-mini')
+const selectedModelId = ref(chatModels.value[0]?.id)
 const selectedModel = computed(() => chatModels.value.find(m => m.id === selectedModelId.value) || chatModels.value[0])
 const modelGroups = computed(() => {
-    const groups = new Map<string, FeatureModel[]>()
+    const groups = new Map<string, ChatModel[]>()
 
     for (const model of chatModels.value) {
-        const models = groups.get(model.provider) || []
+        const models = groups.get(model.providerName) || []
         models.push(model)
-        groups.set(model.provider, models)
+        groups.set(model.providerName, models)
     }
 
     return [...groups.entries()].map(([label, models]) => ({ label, models }))
@@ -135,15 +135,6 @@ function toggleVoice() {
                                         class="text-[13px]"
                                     >
                                         <span class="flex-1">{{ model.name }}</span>
-                                        <span
-                                            v-if="model.badge"
-                                            class="ml-2 rounded px-1 py-0.5 text-[10px] font-medium leading-none"
-                                            :class="model.badge === 'Fast'
-                                                ? 'bg-[rgba(52,199,89,0.12)] text-[#34c759] dark:bg-[rgba(48,209,88,0.18)] dark:text-[#30d158]'
-                                                : 'bg-[rgba(0,119,237,0.10)] text-[#0077ED] dark:bg-[rgba(0,149,255,0.18)] dark:text-[#3aa3ff]'"
-                                        >
-                                            {{ model.badge }}
-                                        </span>
                                     </UiDropdownMenuDropdownMenuRadioItem>
                                 </template>
                             </UiDropdownMenuDropdownMenuRadioGroup>
