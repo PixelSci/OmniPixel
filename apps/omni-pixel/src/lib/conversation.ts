@@ -1,7 +1,10 @@
-import { http } from './http'
+import { http, ApiError } from './http'
 
-export interface SessionItem {
+// ── Types ────────────────────────────────────────────────────────────────
+
+export interface ConversationItem {
     id: string
+    user_id: string
     title: string
     is_visible: boolean
     is_archived: boolean
@@ -19,7 +22,7 @@ export interface ChatMessage {
     created_at: string
 }
 
-export interface SessionDetail {
+export interface ConversationDetail {
     id: string
     title: string
     is_visible: boolean
@@ -30,42 +33,59 @@ export interface SessionDetail {
 }
 
 export interface ChatRequest {
-    conversation_id?: string | null
     message: string
     model_id: string
+    conversation_id?: string
 }
 
-export function listSessions(): Promise<SessionItem[]> {
-    return http.get<SessionItem[]>('/conversations')
+// ── API calls ────────────────────────────────────────────────────────────
+
+export function listConversations(): Promise<ConversationItem[]> {
+    return http.get<ConversationItem[]>('/conversations')
 }
 
-export function getSession(id: string): Promise<SessionDetail> {
-    return http.get<SessionDetail>(`/conversations/${id}`)
+export function getConversation(id: string): Promise<ConversationDetail> {
+    return http.get<ConversationDetail>(`/conversations/${id}`)
 }
 
-export function deleteSession(id: string): Promise<void> {
-    return http.delete<void>(`/conversations/${id}`)
+// ── SSE Streaming Chat ───────────────────────────────────────────────────
+
+export type StreamEvent =
+    | { type: 'token'; token: string }
+    | { type: 'done'; conversation_id: string; message_id: string }
+    | { type: 'error'; message: string }
+
+export interface StreamCallbacks {
+    onToken: (token: string) => void
+    onDone: (conversationId: string, messageId: string) => void
+    onError: (error: Error) => void
+}
+
+function getStoredToken(): string | null {
+    try {
+        const raw = localStorage.getItem('omni-pixel:access-token')
+        if (raw) {
+            const token = JSON.parse(raw)
+            return token || null
+        }
+    } catch { /* ignore */ }
+    return null
 }
 
 export function streamChat(
     payload: ChatRequest,
-    callbacks: {
-        onToken: (token: string) => void
-        onDone: (conversationId: string, messageId: string) => void
-        onError: (error: Error) => void
-    },
+    callbacks: StreamCallbacks,
     signal?: AbortSignal,
 ): Promise<void> {
     const baseUrl = '/api/v1'
     const resolved = `${window.location.origin}${baseUrl}/conversation`
 
-    const headers: Record<string, string> = { 'Content-Type': 'application/json' }
-    const raw = localStorage.getItem('omni-pixel:access-token')
-    if (raw) {
-        try {
-            const token = JSON.parse(raw)
-            if (token) headers['Authorization'] = `Bearer ${token}`
-        } catch { /* ignore */ }
+    const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+    }
+    const token = getStoredToken()
+    if (token) {
+        headers['Authorization'] = `Bearer ${token}`
     }
 
     return fetch(resolved, {
@@ -77,7 +97,7 @@ export function streamChat(
     }).then(async (response) => {
         if (!response.ok) {
             const errorBody = await response.json().catch(() => ({}))
-            throw new Error(errorBody?.message ?? `Stream request failed: ${response.status}`)
+            throw new ApiError(response.status, errorBody?.message ?? `Stream request failed: ${response.status}`)
         }
 
         const reader = response.body?.getReader()
@@ -100,7 +120,11 @@ export function streamChat(
                 if (!jsonStr) continue
 
                 let parsed: Record<string, unknown>
-                try { parsed = JSON.parse(jsonStr) } catch { continue }
+                try {
+                    parsed = JSON.parse(jsonStr)
+                } catch {
+                    continue
+                }
 
                 if (parsed.token) {
                     callbacks.onToken(parsed.token as string)

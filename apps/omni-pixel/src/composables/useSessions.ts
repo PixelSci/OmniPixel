@@ -1,10 +1,8 @@
 import { ref, type Ref } from 'vue'
 import {
     listSessions,
-    createSession,
     deleteSession as deleteSessionApi,
     type SessionItem,
-    type SessionDetail,
 } from '@/lib/session'
 import { ApiError } from '@/lib/http'
 
@@ -18,8 +16,7 @@ export function useSessions() {
         loading.value = true
         error.value = null
         try {
-            const res = await listSessions()
-            sessions.value = res.sessions
+            sessions.value = await listSessions()
         } catch (e) {
             if (e instanceof ApiError && e.status === 401) {
                 sessions.value = []
@@ -32,22 +29,19 @@ export function useSessions() {
         }
     }
 
-    async function create(): Promise<SessionDetail | null> {
-        try {
-            const session = await createSession()
-            sessions.value.unshift({
-                id: session.id,
-                title: session.title,
-                preview: session.preview,
-                model: session.model,
-                updated_at: session.updated_at,
-                last_chat_at: null,
-            })
-            return session
-        } catch (e) {
-            error.value = e instanceof Error ? e.message : 'Failed to create session'
-            return null
+    async function create(): Promise<SessionItem | null> {
+        // Conversations are created on first chat via POST /conversation.
+        // For now, create an optimistic placeholder that will be replaced
+        // when the first message stream completes.
+        const optimistic: SessionItem = {
+            id: '',
+            title: 'New Chat',
+            is_visible: true,
+            is_archived: false,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
         }
+        return optimistic
     }
 
     async function remove(id: string) {

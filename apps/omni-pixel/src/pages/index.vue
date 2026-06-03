@@ -1,9 +1,12 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, nextTick, computed } from 'vue'
+import { useAuth } from '@/composables/useAuth'
 import { useSessions } from '@/composables/useSessions'
-import { useModelApiKeys } from '@/composables/useModelApiKeys'
-import { sendChat, getSession, type ChatMessage } from '@/lib/session'
-import type { FeatureModel } from '@/composables/useModelSettings'
+import { getSession, streamChat, type ChatMessage } from '@/lib/session'
+import HigSigninModal from '@/components/HigSigninModal.vue'
+
+const { isAuthenticated } = useAuth()
+const showSignin = computed(() => !isAuthenticated.value)
 
 const {
     sessions: sessionList,
@@ -15,21 +18,24 @@ const {
     remove,
     setActive,
 } = useSessions()
-const { keyForProvider } = useModelApiKeys()
 
 const messages = ref<ChatMessage[]>([])
 const isLoading = ref(false)
-const isCreatingSession = ref(false)
+const streamBuffer = ref('')
+const messagesEl = ref<HTMLElement | null>(null)
 
 let abortController: AbortController | null = null
-
-function nextMessageId() {
-    return `msg-${Date.now()}-${Math.random().toString(16).slice(2)}`
-}
 
 onMounted(() => {
     fetchSessions()
 })
+
+async function scrollToBottom() {
+    await nextTick()
+    if (messagesEl.value) {
+        messagesEl.value.scrollTop = messagesEl.value.scrollHeight
+    }
+}
 
 async function handleSelect(id: string) {
     setActive(id)
@@ -42,11 +48,9 @@ async function handleSelect(id: string) {
 }
 
 async function handleNew() {
-    isCreatingSession.value = true
     const session = await create()
-    isCreatingSession.value = false
     if (session) {
-        setActive(session.id)
+        setActive('')
         messages.value = []
     }
 }
@@ -55,48 +59,67 @@ async function handleDelete(id: string) {
     await remove(id)
 }
 
-async function handleSend(payload: { message: string, model: FeatureModel }) {
-    const sessionId = activeId.value
-    if (!sessionId) return
-
-    const userMessage: ChatMessage = {
-        id: nextMessageId(),
-        role: 'user',
+async function handleSend(payload: { message: string, model: { id: string } }) {
+    const convId = activeId.value || undefined
+    const userMsg: ChatMessage = {
+        id: `user-${Date.now()}`,
+        conversation_id: convId ?? '',
+        user_id: '',
         content: payload.message,
+        model_id: payload.model.id,
+        type: 0,
+        created_at: new Date().toISOString(),
     }
-    messages.value.push(userMessage)
-
-    const apiKey = keyForProvider(payload.model.providerId)
-    if (!apiKey) {
-        messages.value.push({
-            id: nextMessageId(),
-            role: 'assistant',
-            model: payload.model.name,
-            content: `请先在个人中心添加 ${payload.model.provider} API Key，然后再发送消息。`,
-        })
-        return
-    }
+    messages.value.push(userMsg)
+    await scrollToBottom()
 
     isLoading.value = true
+    streamBuffer.value = ''
     abortController = new AbortController()
 
     try {
-        const res = await sendChat(sessionId, {
-            prompt: payload.message,
-            provider: payload.model.providerId,
-            model: payload.model.id,
-            api_key: apiKey,
-        })
-        messages.value.push(res.assistant_message)
-    } catch (error) {
-        if (error instanceof DOMException && error.name === 'AbortError') return
-
-        messages.value.push({
-            id: nextMessageId(),
-            role: 'assistant',
-            model: payload.model.name,
-            content: error instanceof Error ? error.message : '调用模型时发生未知错误。',
-        })
+        await streamChat(
+            {
+                conversation_id: convId ?? null,
+                message: payload.message,
+                model_id: payload.model.id,
+            },
+            {
+                onToken(token) {
+                    streamBuffer.value += token
+                },
+                onDone(conversationId, messageId) {
+                    const aiMsg: ChatMessage = {
+                        id: messageId,
+                        conversation_id: conversationId,
+                        user_id: '',
+                        content: streamBuffer.value,
+                        model_id: payload.model.id,
+                        type: 1,
+                        created_at: new Date().toISOString(),
+                    }
+                    messages.value.push(aiMsg)
+                    if (!activeId.value) {
+                        setActive(conversationId)
+                        fetchSessions()
+                    }
+                    streamBuffer.value = ''
+                    scrollToBottom()
+                },
+                onError(err) {
+                    messages.value.push({
+                        id: `err-${Date.now()}`,
+                        conversation_id: convId ?? '',
+                        user_id: '',
+                        content: err.message,
+                        model_id: payload.model.id,
+                        type: 1,
+                        created_at: new Date().toISOString(),
+                    })
+                },
+            },
+            abortController.signal,
+        )
     } finally {
         isLoading.value = false
         abortController = null
@@ -123,39 +146,45 @@ function handleStop() {
                 />
             </HigSidebar>
 
-            <!-- chat area -->
             <div class="flex flex-1 flex-col overflow-hidden">
-                <!-- messages -->
-                <div class="flex flex-1 flex-col overflow-y-auto py-6">
+                <div
+                    ref="messagesEl"
+                    class="flex flex-1 flex-col overflow-y-auto py-6"
+                >
                     <div v-if="!activeId && sessionsError" class="flex flex-1 items-center justify-center text-[var(--hig-secondary-label)] text-[13px]">
                         {{ sessionsError }}
                     </div>
-                    <div v-else-if="!activeId" class="flex flex-1 items-center justify-center text-[var(--hig-secondary-label)] text-[13px]">
-                        Select or start a new chat
+                    <div v-else-if="!activeId && sessionList.length === 0" class="flex flex-1 items-center justify-center text-[var(--hig-secondary-label)] text-[13px]">
+                        Start a new chat to begin
                     </div>
-                    <div v-else class="mx-auto flex w-full max-w-3/5 flex-col gap-5 px-4">
+                    <div v-else class="mx-auto flex w-full max-w-3xl flex-col gap-5 px-4">
                         <template v-for="message in messages" :key="message.id">
                             <HigUserMessage
-                                v-if="message.role === 'user'"
+                                v-if="message.type === 0"
                                 :content="message.content"
                             />
                             <HigAssistantMessage
                                 v-else
-                                :model="message.model"
                                 :content="message.content"
+                                :streaming="false"
                             />
                         </template>
+                        <HigAssistantMessage
+                            v-if="isLoading && streamBuffer"
+                            :content="streamBuffer"
+                            :streaming="true"
+                        />
                     </div>
                 </div>
 
-                <!-- prompt input -->
                 <HigPromptInput
                     :loading="isLoading"
-                    :disabled="isCreatingSession"
                     @send="handleSend"
                     @stop="handleStop"
                 />
             </div>
         </div>
     </HigBox>
+
+    <HigSigninModal :open="showSignin" @close="() => {}" />
 </template>

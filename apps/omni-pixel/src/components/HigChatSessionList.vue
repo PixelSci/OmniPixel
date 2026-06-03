@@ -135,16 +135,6 @@ function handleDelete(id: string) {
                     </span>
                 </div>
 
-                <!-- preview -->
-                <span
-                    v-if="session.preview"
-                    class="mt-0.5 line-clamp-2 w-full text-[12px] leading-snug"
-                    :class="activeId === session.id
-                        ? 'text-white/75'
-                        : 'text-[var(--hig-secondary-label)]'"
-                >
-                    {{ session.preview }}
-                </span>
             </button>
         </template>
     </div>
