@@ -6,6 +6,7 @@ import (
 	"github.com/google/uuid"
 
 	"omni-pixel/domain"
+	"omni-pixel/internal/generation"
 )
 
 const defaultConversationTitle = "New Chat"
@@ -14,10 +15,19 @@ const conversationTitleMaxLength = 60
 type ConversationUseCase struct {
 	conversationRepository domain.ConversationRepository
 	aiProvider             domain.AIProvider
+	genManager             *generation.Manager
 }
 
-func NewConversationUseCase(conversationRepository domain.ConversationRepository, aiProvider domain.AIProvider) *ConversationUseCase {
-	return &ConversationUseCase{conversationRepository: conversationRepository, aiProvider: aiProvider}
+func NewConversationUseCase(
+	conversationRepository domain.ConversationRepository,
+	aiProvider domain.AIProvider,
+	genManager *generation.Manager,
+) *ConversationUseCase {
+	return &ConversationUseCase{
+		conversationRepository: conversationRepository,
+		aiProvider:             aiProvider,
+		genManager:             genManager,
+	}
 }
 
 func (u *ConversationUseCase) DeleteConversation(userID, conversationID uuid.UUID) error {
@@ -29,7 +39,6 @@ func (u *ConversationUseCase) ListConversations(userID uuid.UUID) (*[]domain.Con
 	if err != nil {
 		return nil, err
 	}
-
 	return &conversations, nil
 }
 
@@ -44,7 +53,7 @@ func (u *ConversationUseCase) GetConversation(userID, conversationID uuid.UUID) 
 		return nil, err
 	}
 
-	return &domain.ConversationDetailResponse{
+	resp := &domain.ConversationDetailResponse{
 		ID:         conversation.ID,
 		Title:      conversation.Title,
 		IsVisible:  conversation.IsVisible,
@@ -52,10 +61,60 @@ func (u *ConversationUseCase) GetConversation(userID, conversationID uuid.UUID) 
 		CreatedAt:  conversation.CreatedAt,
 		UpdatedAt:  conversation.UpdatedAt,
 		Messages:   messages,
-	}, nil
+	}
+
+	if gen, ok := u.genManager.Get(conversationID); ok {
+		resp.Generating = true
+		content := gen.Content()
+		if content != "" {
+			resp.Messages = append(resp.Messages, domain.Message{
+				ID:             uuid.Nil,
+				ConversationID: conversationID,
+				Content:        content,
+				Type:           1,
+				CreatedAt:      time.Now(),
+			})
+		}
+	}
+
+	return resp, nil
 }
 
 func (u *ConversationUseCase) Chat(userID uuid.UUID, request domain.ChatRequest, writer domain.StreamWriter) error {
+	// ── Resume path: existing generation ──────────────────────────
+	if request.ConversationID != nil && u.genManager.Has(*request.ConversationID) {
+		ch, buffer, ok := u.genManager.Subscribe(*request.ConversationID)
+		if !ok {
+			// Generation just finished between Has and Subscribe, treat as done
+			gen, _ := u.genManager.Get(*request.ConversationID)
+			if gen == nil {
+				conv, err := u.conversationRepository.FindByID(*request.ConversationID, userID)
+				if err != nil {
+					return err
+				}
+				return writer.WriteDone(conv.ID, uuid.Nil)
+			}
+		}
+
+		// Replay buffered tokens
+		for _, token := range buffer {
+			if err := writer.WriteToken(token); err != nil {
+				u.genManager.Finish(*request.ConversationID) // cleanup subscriber
+				return nil
+			}
+		}
+
+		// Stream live tokens
+		for token := range ch {
+			if err := writer.WriteToken(token); err != nil {
+				return nil // client disconnected, generation continues
+			}
+		}
+
+		return writer.WriteDone(*request.ConversationID, uuid.Nil)
+	}
+
+	// ── New message path ──────────────────────────────────────────
 	var conversationID uuid.UUID
 
 	if request.ConversationID == nil {
@@ -118,29 +177,40 @@ func (u *ConversationUseCase) Chat(userID uuid.UUID, request domain.ChatRequest,
 		return err
 	}
 
-	var fullContent string
-	for chunk := range ch {
-		if chunk.Done {
-			break
+	gen := u.genManager.Start(conversationID)
+	subCh := gen.Subscribe()
+
+	// Start background goroutine to consume AI stream into Manager
+	go func() {
+		var fullContent string
+		for chunk := range ch {
+			if chunk.Done {
+				break
+			}
+			fullContent += chunk.Token
+			gen.Append(chunk.Token)
 		}
-		fullContent += chunk.Token
-		if err := writer.WriteToken(chunk.Token); err != nil {
-			return err
+
+		u.genManager.Finish(conversationID)
+
+		aiMessage := &domain.Message{
+			ID:             uuid.New(),
+			ConversationID: conversationID,
+			UserId:         userID,
+			Content:        fullContent,
+			ModelID:        modelUUID,
+			Type:           1,
+			CreatedAt:      time.Now(),
+		}
+		_ = u.conversationRepository.InsertMessage(aiMessage)
+	}()
+
+	// Stream tokens to the SSE client from the Manager's subscriber channel
+	for token := range subCh {
+		if err := writer.WriteToken(token); err != nil {
+			return nil // client disconnected, generation continues in background
 		}
 	}
 
-	aiMessage := &domain.Message{
-		ID:             uuid.New(),
-		ConversationID: conversationID,
-		UserId:         userID,
-		Content:        fullContent,
-		ModelID:        modelUUID,
-		Type:           1,
-		CreatedAt:      time.Now(),
-	}
-	if err := u.conversationRepository.InsertMessage(aiMessage); err != nil {
-		return err
-	}
-
-	return writer.WriteDone(conversationID, aiMessage.ID)
+	return writer.WriteDone(conversationID, uuid.Nil)
 }

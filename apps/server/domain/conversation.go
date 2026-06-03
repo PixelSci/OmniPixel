@@ -37,6 +37,7 @@ type ConversationDetailResponse struct {
 	Title      string    `json:"title"`
 	IsVisible  bool      `json:"is_visible"`
 	IsArchived bool      `json:"is_archived"`
+	Generating bool      `json:"generating"`
 	CreatedAt  time.Time `json:"created_at"`
 	UpdatedAt  time.Time `json:"updated_at"`
 	Messages   []Message `json:"messages"`

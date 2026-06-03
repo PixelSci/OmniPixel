@@ -5,6 +5,7 @@ import (
 
 	"omni-pixel/api/controller"
 	"omni-pixel/internal/ai"
+	"omni-pixel/internal/generation"
 	"omni-pixel/repository"
 	"omni-pixel/usecase"
 
@@ -35,8 +36,9 @@ func NewProviders() *Providers {
 		env.AccessTokenSecret,
 		env.AccessTokenExpiryHour,
 	)
+	genManager := generation.NewManager()
 	aiProvider := ai.NewOpenAIProvider(env.AIBaseURL, env.AIAPIKey)
-	conversationUseCase := usecase.NewConversationUseCase(conversationRepository, aiProvider)
+	conversationUseCase := usecase.NewConversationUseCase(conversationRepository, aiProvider, genManager)
 	providerUseCase := usecase.NewProviderUseCase(providerRepository)
 	modelUseCase := usecase.NewModelUseCase(modelRepository)
 
