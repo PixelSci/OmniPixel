@@ -45,7 +45,11 @@ export function getConversation(id: string): Promise<ConversationDetail> {
 }
 
 export function deleteConversation(id: string): Promise<void> {
-    return http.delete<void>(`/conversations/${id}`)
+    return http.post<void>(`/conversations/${id}`, { action: 'delete' })
+}
+
+export function updateConversationTitle(id: string, title: string): Promise<{ title: string }> {
+    return http.post<{ title: string }>(`/conversations/${id}`, { action: 'update', title })
 }
 
 export function streamChat(
