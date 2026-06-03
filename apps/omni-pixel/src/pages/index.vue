@@ -131,6 +131,10 @@ async function handleDelete(id: string) {
     await remove(id)
 }
 
+async function handleRename(_id: string, _title: string) {
+    fetchConversations()
+}
+
 async function handleSend(payload: { message: string, model: { id: string, name: string } }) {
     const convId = activeId.value || undefined
     const userMsg: ChatMessage = {
@@ -214,6 +218,7 @@ function handleStop() {
                     :loading="conversationsLoading"
                     @select="handleSelect"
                     @new="handleNew"
+                    @rename="handleRename"
                     @delete="handleDelete"
                 />
             </HigSidebar>
