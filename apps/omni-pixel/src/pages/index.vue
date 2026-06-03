@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { ref, onMounted, nextTick, computed, watch } from 'vue'
+import { ref, onMounted, onUnmounted, nextTick, computed, watch } from 'vue'
 import { useAuth } from '@/composables/useAuth'
 import { useConversations } from '@/composables/useConversations'
 import { getConversation, streamChat, type ChatMessage } from '@/lib/conversation'
+import { loadModels } from '@/composables/useModelSettings'
 import HigSigninModal from '@/components/HigSigninModal.vue'
 
 const { isAuthenticated } = useAuth()
@@ -26,12 +27,30 @@ const messagesEl = ref<HTMLElement | null>(null)
 
 let abortController: AbortController | null = null
 
+let resizeObserver: ResizeObserver | null = null
+
 onMounted(() => {
     fetchConversations()
+    loadModels()
+    if (messagesEl.value) {
+        resizeObserver = new ResizeObserver(() => {
+            if (isLoading.value && messagesEl.value) {
+                messagesEl.value.scrollTop = messagesEl.value.scrollHeight
+            }
+        })
+        resizeObserver.observe(messagesEl.value)
+    }
+})
+
+onUnmounted(() => {
+    resizeObserver?.disconnect()
 })
 
 watch(isAuthenticated, (authed) => {
-    if (authed) fetchConversations()
+    if (authed) {
+        fetchConversations()
+        loadModels()
+    }
 })
 
 async function scrollToBottom() {
@@ -63,14 +82,14 @@ async function handleDelete(id: string) {
     await remove(id)
 }
 
-async function handleSend(payload: { message: string, model: { id: string } }) {
+async function handleSend(payload: { message: string, model: { id: string, name: string } }) {
     const convId = activeId.value || undefined
     const userMsg: ChatMessage = {
         id: `user-${Date.now()}`,
         conversation_id: convId ?? '',
         user_id: '',
         content: payload.message,
-        model_id: payload.model.id,
+        model_id: payload.model.name,
         type: 0,
         created_at: new Date().toISOString(),
     }
@@ -86,7 +105,7 @@ async function handleSend(payload: { message: string, model: { id: string } }) {
             {
                 conversation_id: convId ?? null,
                 message: payload.message,
-                model_id: payload.model.id,
+                model_id: payload.model.name,
             },
             {
                 onToken(token) {
@@ -98,7 +117,7 @@ async function handleSend(payload: { message: string, model: { id: string } }) {
                         conversation_id: conversationId,
                         user_id: '',
                         content: streamBuffer.value,
-                        model_id: payload.model.id,
+                        model_id: payload.model.name,
                         type: 1,
                         created_at: new Date().toISOString(),
                     }
@@ -116,7 +135,7 @@ async function handleSend(payload: { message: string, model: { id: string } }) {
                         conversation_id: convId ?? '',
                         user_id: '',
                         content: err.message,
-                        model_id: payload.model.id,
+                        model_id: payload.model.name,
                         type: 1,
                         created_at: new Date().toISOString(),
                     })

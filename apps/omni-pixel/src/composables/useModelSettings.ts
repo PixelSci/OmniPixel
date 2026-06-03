@@ -7,12 +7,12 @@ const STORAGE_KEY = 'omni-pixel:enabled-models'
 const apiModels = ref<ModelResponse[]>([])
 const loaded = ref(false)
 
-async function loadModels() {
+export async function loadModels() {
     if (loaded.value) return
     try {
         apiModels.value = await listModels()
-    } catch { /* use empty fallback */ }
-    loaded.value = true
+        loaded.value = true
+    } catch { /* retry on next call */ }
 }
 
 const enabledIds = useLocalStorage<string[]>(STORAGE_KEY, [])
