@@ -1,6 +1,7 @@
 import axios, { type AxiosInstance, type AxiosRequestConfig, type AxiosResponse } from 'axios'
 
 const BASE_URL = '/api/v1'
+const TOKEN_KEY = 'omni-pixel:access-token'
 
 const instance: AxiosInstance = axios.create({
     baseURL: BASE_URL,
@@ -11,15 +12,17 @@ const instance: AxiosInstance = axios.create({
     },
 })
 
+export function getToken(): string | null {
+    const raw = localStorage.getItem(TOKEN_KEY)
+    if (!raw || raw === 'null') return null
+    return raw
+}
+
 instance.interceptors.request.use(
     (config) => {
-        const raw = localStorage.getItem('omni-pixel:access-token')
-        if (raw) {
-            try {
-                const token = JSON.parse(raw)
-                if (token) config.headers.Authorization = `Bearer ${token}`
-            } catch { /* ignore parse errors */ }
-        }
+        if ((config as any).anonymous) return config
+        const token = getToken()
+        if (token) config.headers.Authorization = `Bearer ${token}`
         return config
     },
     (error) => Promise.reject(error),
@@ -45,12 +48,16 @@ export class ApiError extends Error {
     }
 }
 
+export interface RequestOptions extends AxiosRequestConfig {
+    anonymous?: boolean
+}
+
 export const http = {
-    get: <T>(url: string, config?: AxiosRequestConfig) =>
+    get: <T>(url: string, config?: RequestOptions) =>
         instance.get<T>(url, config).then((r) => r.data),
-    post: <T>(url: string, data?: unknown, config?: AxiosRequestConfig) =>
+    post: <T>(url: string, data?: unknown, config?: RequestOptions) =>
         instance.post<T>(url, data, config).then((r) => r.data),
-    delete: <T>(url: string, config?: AxiosRequestConfig) =>
+    delete: <T>(url: string, config?: RequestOptions) =>
         instance.delete<T>(url, config).then((r) => r.data),
 }
 

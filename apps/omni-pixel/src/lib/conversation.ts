@@ -1,4 +1,4 @@
-import { http } from './http'
+import { http, getToken } from './http'
 
 export interface ConversationItem {
     id: string
@@ -60,13 +60,8 @@ export function streamChat(
     const resolved = `${window.location.origin}${baseUrl}/conversation`
 
     const headers: Record<string, string> = { 'Content-Type': 'application/json' }
-    const raw = localStorage.getItem('omni-pixel:access-token')
-    if (raw) {
-        try {
-            const token = JSON.parse(raw)
-            if (token) headers['Authorization'] = `Bearer ${token}`
-        } catch { /* ignore */ }
-    }
+    const token = getToken()
+    if (token) headers['Authorization'] = `Bearer ${token}`
 
     return fetch(resolved, {
         method: 'POST',

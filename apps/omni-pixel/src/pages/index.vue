@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, nextTick, computed } from 'vue'
+import { ref, onMounted, nextTick, computed, watch } from 'vue'
 import { useAuth } from '@/composables/useAuth'
 import { useConversations } from '@/composables/useConversations'
 import { getConversation, streamChat, type ChatMessage } from '@/lib/conversation'
@@ -28,6 +28,10 @@ let abortController: AbortController | null = null
 
 onMounted(() => {
     fetchConversations()
+})
+
+watch(isAuthenticated, (authed) => {
+    if (authed) fetchConversations()
 })
 
 async function scrollToBottom() {
