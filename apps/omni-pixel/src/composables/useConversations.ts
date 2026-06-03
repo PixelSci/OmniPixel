@@ -1,39 +1,36 @@
 import { ref, type Ref } from 'vue'
 import {
-    listSessions,
-    deleteSession as deleteSessionApi,
-    type SessionItem,
-} from '@/lib/session'
+    listConversations,
+    deleteConversation as deleteConversationApi,
+    type ConversationItem,
+} from '@/lib/conversation'
 import { ApiError } from '@/lib/http'
 
-export function useSessions() {
-    const sessions: Ref<SessionItem[]> = ref([])
+export function useConversations() {
+    const conversations: Ref<ConversationItem[]> = ref([])
     const activeId: Ref<string | null> = ref(null)
     const loading = ref(false)
     const error = ref<string | null>(null)
 
-    async function fetchSessions() {
+    async function fetchConversations() {
         loading.value = true
         error.value = null
         try {
-            sessions.value = await listSessions()
+            conversations.value = await listConversations()
         } catch (e) {
             if (e instanceof ApiError && e.status === 401) {
-                sessions.value = []
+                conversations.value = []
                 error.value = 'Please sign in'
             } else {
-                error.value = e instanceof Error ? e.message : 'Failed to load sessions'
+                error.value = e instanceof Error ? e.message : 'Failed to load conversations'
             }
         } finally {
             loading.value = false
         }
     }
 
-    async function create(): Promise<SessionItem | null> {
-        // Conversations are created on first chat via POST /conversation.
-        // For now, create an optimistic placeholder that will be replaced
-        // when the first message stream completes.
-        const optimistic: SessionItem = {
+    async function create(): Promise<ConversationItem | null> {
+        const optimistic: ConversationItem = {
             id: '',
             title: 'New Chat',
             is_visible: true,
@@ -46,13 +43,13 @@ export function useSessions() {
 
     async function remove(id: string) {
         try {
-            await deleteSessionApi(id)
-            sessions.value = sessions.value.filter(s => s.id !== id)
+            await deleteConversationApi(id)
+            conversations.value = conversations.value.filter(s => s.id !== id)
             if (activeId.value === id) {
                 activeId.value = null
             }
         } catch (e) {
-            error.value = e instanceof Error ? e.message : 'Failed to delete session'
+            error.value = e instanceof Error ? e.message : 'Failed to delete conversation'
         }
     }
 
@@ -61,11 +58,11 @@ export function useSessions() {
     }
 
     return {
-        sessions,
+        conversations,
         activeId,
         loading,
         error,
-        fetchSessions,
+        fetchConversations,
         create,
         remove,
         setActive,

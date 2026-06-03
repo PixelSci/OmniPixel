@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Plus, Trash2 } from 'lucide-vue-next'
 import { computed } from 'vue'
-import type { SessionItem } from '@/lib/session'
+import type { ConversationItem } from '@/lib/conversation'
 
 const props = defineProps<Props>()
 
@@ -12,13 +12,13 @@ const emit = defineEmits<{
 }>()
 
 interface Props {
-    sessions: SessionItem[]
+    sessions: ConversationItem[]
     activeId?: string
     loading?: boolean
 }
 
 // ── date grouping ────────────────────────────────────────────────────
-interface Group { label: string, sessions: SessionItem[] }
+interface Group { label: string, sessions: ConversationItem[] }
 
 const groups = computed<Group[]>(() => {
     const now = new Date()
@@ -27,7 +27,7 @@ const groups = computed<Group[]>(() => {
     const startOf7Days = new Date(startOfToday.getTime() - 6 * 86400000)
     const startOf30Days = new Date(startOfToday.getTime() - 29 * 86400000)
 
-    const buckets: Record<string, SessionItem[]> = {
+    const buckets: Record<string, ConversationItem[]> = {
         'Today': [],
         'Yesterday': [],
         'Previous 7 Days': [],

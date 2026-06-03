@@ -1,23 +1,23 @@
 <script setup lang="ts">
 import { ref, onMounted, nextTick, computed } from 'vue'
 import { useAuth } from '@/composables/useAuth'
-import { useSessions } from '@/composables/useSessions'
-import { getSession, streamChat, type ChatMessage } from '@/lib/session'
+import { useConversations } from '@/composables/useConversations'
+import { getConversation, streamChat, type ChatMessage } from '@/lib/conversation'
 import HigSigninModal from '@/components/HigSigninModal.vue'
 
 const { isAuthenticated } = useAuth()
 const showSignin = computed(() => !isAuthenticated.value)
 
 const {
-    sessions: sessionList,
+    conversations: conversationList,
     activeId,
-    loading: sessionsLoading,
-    error: sessionsError,
-    fetchSessions,
+    loading: conversationsLoading,
+    error: conversationsError,
+    fetchConversations,
     create,
     remove,
     setActive,
-} = useSessions()
+} = useConversations()
 
 const messages = ref<ChatMessage[]>([])
 const isLoading = ref(false)
@@ -27,7 +27,7 @@ const messagesEl = ref<HTMLElement | null>(null)
 let abortController: AbortController | null = null
 
 onMounted(() => {
-    fetchSessions()
+    fetchConversations()
 })
 
 async function scrollToBottom() {
@@ -40,7 +40,7 @@ async function scrollToBottom() {
 async function handleSelect(id: string) {
     setActive(id)
     try {
-        const detail = await getSession(id)
+        const detail = await getConversation(id)
         messages.value = detail.messages ?? []
     } catch {
         messages.value = []
@@ -101,7 +101,7 @@ async function handleSend(payload: { message: string, model: { id: string } }) {
                     messages.value.push(aiMsg)
                     if (!activeId.value) {
                         setActive(conversationId)
-                        fetchSessions()
+                        fetchConversations()
                     }
                     streamBuffer.value = ''
                     scrollToBottom()
@@ -137,9 +137,9 @@ function handleStop() {
         <div class="flex h-full w-full">
             <HigSidebar>
                 <HigChatSessionList
-                    :sessions="sessionList"
+                    :sessions="conversationList"
                     :active-id="activeId ?? undefined"
-                    :loading="sessionsLoading"
+                    :loading="conversationsLoading"
                     @select="handleSelect"
                     @new="handleNew"
                     @delete="handleDelete"
@@ -151,10 +151,10 @@ function handleStop() {
                     ref="messagesEl"
                     class="flex flex-1 flex-col overflow-y-auto py-6"
                 >
-                    <div v-if="!activeId && sessionsError" class="flex flex-1 items-center justify-center text-[var(--hig-secondary-label)] text-[13px]">
-                        {{ sessionsError }}
+                    <div v-if="!activeId && conversationsError" class="flex flex-1 items-center justify-center text-[var(--hig-secondary-label)] text-[13px]">
+                        {{ conversationsError }}
                     </div>
-                    <div v-else-if="!activeId && sessionList.length === 0" class="flex flex-1 items-center justify-center text-[var(--hig-secondary-label)] text-[13px]">
+                    <div v-else-if="!activeId && conversationList.length === 0" class="flex flex-1 items-center justify-center text-[var(--hig-secondary-label)] text-[13px]">
                         Start a new chat to begin
                     </div>
                     <div v-else class="mx-auto flex w-full max-w-3xl flex-col gap-5 px-4">
