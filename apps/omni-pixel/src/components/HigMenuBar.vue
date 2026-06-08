@@ -95,9 +95,9 @@ const dateStr = computed(() =>
 // ── menu bar nav items ──────────────────────────────────────────────────
 const menuItems = [
     { label: 'Text', route: '/text' },
-    { label: 'Image', route: null },
-    { label: 'Audio', route: null },
-    { label: 'Video', route: null },
+    { label: 'Image', route: '/image' },
+    { label: 'Audio', route: '/audio' },
+    { label: 'Video', route: '/video' },
 ]
 
 function isActive(item: (typeof menuItems)[number]) {
@@ -108,21 +108,6 @@ function isActive(item: (typeof menuItems)[number]) {
 function handleMenuClick(item: (typeof menuItems)[number]) {
     if (item.route) router.push(item.route)
 }
-
-// ── Image submenu ───────────────────────────────────────────────────────
-type SubItem = { type: 'item', label: string } | { type: 'separator' }
-
-const imageSubItems: SubItem[] = [
-    { type: 'item', label: 'Import Image...' },
-    { type: 'item', label: 'Export Image...' },
-    { type: 'separator' },
-    { type: 'item', label: 'Resize...' },
-    { type: 'item', label: 'Crop' },
-    { type: 'item', label: 'Rotate Left' },
-    { type: 'item', label: 'Rotate Right' },
-    { type: 'separator' },
-    { type: 'item', label: 'Convert Format...' },
-]
 
 // ── Logo submenu ────────────────────────────────────────────────────────
 type LogoAction = 'profile' | 'models' | 'logout'
@@ -148,18 +133,11 @@ function handleLogoAction(action: LogoAction) {
         modelSettingsOpen.value = true
 }
 
-const imageMenuOpen = ref(false)
 const logoMenuOpen = ref(false)
 const menuBarEl = ref<HTMLElement | null>(null)
-const imageMenuLeft = ref(0)
 const logoMenuLeft = ref(0)
 const menuBarHeight = ref(32)
 let closeTimer: ReturnType<typeof setTimeout> | null = null
-
-const imageMenuStyle = computed(() => ({
-    left: `${imageMenuLeft.value}px`,
-    top: `1px`,
-}))
 
 const logoMenuStyle = computed(() => ({
     left: `${logoMenuLeft.value}px`,
@@ -174,17 +152,6 @@ function menuOffsetLeft(target: HTMLElement) {
     return menuBarRect ? targetRect.left - menuBarRect.left : target.offsetLeft
 }
 
-function openImageMenu(event?: MouseEvent) {
-    keepMenusOpen()
-
-    if (event?.currentTarget instanceof HTMLElement) {
-        imageMenuLeft.value = menuOffsetLeft(event.currentTarget)
-    }
-
-    logoMenuOpen.value = false
-    imageMenuOpen.value = true
-}
-
 function openLogoMenu(event?: MouseEvent) {
     keepMenusOpen()
 
@@ -192,7 +159,6 @@ function openLogoMenu(event?: MouseEvent) {
         logoMenuLeft.value = menuOffsetLeft(event.currentTarget)
     }
 
-    imageMenuOpen.value = false
     logoMenuOpen.value = true
 }
 
@@ -205,7 +171,6 @@ function keepMenusOpen() {
 
 function scheduleCloseMenus() {
     closeTimer = setTimeout(() => {
-        imageMenuOpen.value = false
         logoMenuOpen.value = false
     }, 80)
 }
@@ -216,7 +181,6 @@ function closeMenus() {
         closeTimer = null
     }
 
-    imageMenuOpen.value = false
     logoMenuOpen.value = false
 }
 
@@ -271,23 +235,7 @@ onBeforeUnmount(() => {
                 </Button>
 
                 <template v-for="item in menuItems" :key="item.label">
-                    <div
-                        v-if="item.label === 'Image'"
-                        class="flex h-8 items-center"
-                        @mouseenter="openImageMenu"
-                        @mouseleave="scheduleCloseMenus"
-                    >
-                        <Button
-                            variant="ghost"
-                            class="inline-flex h-[22px] cursor-default items-center rounded px-2 text-[13px] text-foreground transition-colors duration-100 hover:bg-[var(--hig-fill)]"
-                            :class="(imageMenuOpen || isActive(item)) && 'bg-[var(--hig-fill)]'"
-                        >
-                            Image
-                        </Button>
-                    </div>
-
                     <Button
-                        v-else
                         variant="ghost"
                         class="inline-flex h-[22px] cursor-default items-center rounded px-2 text-[13px] text-foreground transition-colors duration-100 hover:bg-[var(--hig-fill)]"
                         :class="isActive(item) && 'bg-[var(--hig-fill)]'"
@@ -325,43 +273,6 @@ onBeforeUnmount(() => {
                 </div>
             </div>
         </div>
-
-        <HigBox
-            v-if="imageMenuOpen"
-            :padding="false"
-            class="absolute z-[1000] min-w-[180px]"
-            :style="imageMenuStyle"
-            @mouseenter="keepMenusOpen"
-            @mouseleave="scheduleCloseMenus"
-        >
-            <div class="px-3 py-[5px]">
-                <template v-for="(sub, i) in imageSubItems" :key="i">
-                    <div
-                        v-if="sub.type === 'separator'"
-                        class="-mx-3 flex h-[11px] items-center"
-                    >
-                        <div class="h-px w-full bg-[#e6e6e6] dark:bg-[rgba(84,84,88,0.65)]" />
-                    </div>
-
-                    <button
-                        v-else
-                        class="group relative flex h-[24px] w-full cursor-default items-center outline-none"
-                    >
-                        <span
-                            class="absolute inset-y-0 left-[-7px] right-[-7px] rounded-[8px] opacity-0 group-hover:opacity-100"
-                            aria-hidden="true"
-                        >
-                            <span class="absolute inset-0 rounded-[8px] bg-[rgba(0,0,0,0.05)]" />
-                            <span class="absolute inset-0 rounded-[8px] bg-[rgba(255,255,255,0.65)] mix-blend-color-dodge" />
-                            <span class="absolute inset-0 rounded-[8px] bg-[#0088ff]" />
-                        </span>
-                        <span class="relative text-[13px] font-[510] text-[#1a1a1a] group-hover:text-white dark:text-[rgba(235,235,245,0.9)] dark:group-hover:text-white">
-                            {{ sub.label }}
-                        </span>
-                    </button>
-                </template>
-            </div>
-        </HigBox>
 
         <HigBox
             v-if="logoMenuOpen"
