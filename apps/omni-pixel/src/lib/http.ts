@@ -2,6 +2,7 @@ import axios, { type AxiosInstance, type AxiosRequestConfig, type AxiosResponse 
 
 const BASE_URL = '/api/v1'
 const TOKEN_KEY = 'omni-pixel:access-token'
+const USER_KEY = 'omni-pixel:user'
 
 const instance: AxiosInstance = axios.create({
     baseURL: BASE_URL,
@@ -33,6 +34,11 @@ instance.interceptors.response.use(
     (error) => {
         if (axios.isCancel(error) || error.code === 'ERR_CANCELED') {
             return Promise.reject(error)
+        }
+        if (error.response?.status === 401) {
+            localStorage.removeItem(TOKEN_KEY)
+            localStorage.removeItem(USER_KEY)
+            window.dispatchEvent(new CustomEvent('auth:unauthorized'))
         }
         const message = error.response?.data?.message ?? error.message ?? 'Request failed'
         return Promise.reject(new ApiError(error.response?.status ?? 0, message))

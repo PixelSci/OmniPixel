@@ -20,6 +20,13 @@ const user = useLocalStorage<AuthUser | null>(USER_KEY, null)
 const loading = ref(false)
 const error = ref<string | null>(null)
 
+if (typeof window !== 'undefined') {
+    window.addEventListener('auth:unauthorized', () => {
+        token.value = null
+        user.value = null
+    })
+}
+
 // Authorization header is set in http.ts interceptor reading from localStorage
 
 // ── Composable ───────────────────────────────────────────────────────────

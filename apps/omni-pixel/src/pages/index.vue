@@ -234,6 +234,9 @@ function handleStop() {
                     <div v-else-if="!activeId && conversationList.length === 0" class="flex flex-1 items-center justify-center text-[var(--hig-secondary-label)] text-[13px]">
                         Start a new chat to begin
                     </div>
+                    <div v-else-if="!activeId" class="flex flex-1 items-center justify-center text-black text-2xl font-medium">
+                        请问有什么可以帮助您？
+                    </div>
                     <div v-else class="mx-auto flex w-full max-w-3xl flex-col gap-5 px-4">
                         <template v-for="message in messages" :key="message.id">
                             <HigUserMessage

@@ -2,11 +2,15 @@
 import { useDark, useNow } from '@vueuse/core'
 import { Moon, Sun, Volume2 } from 'lucide-vue-next'
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import logo from '@/assets/logo.svg'
 import HigBox from '@/components/HigBox.vue'
 import HigModelSettingsSheet from '@/components/HigModelSettingsSheet.vue'
 import HigProfileSheet from '@/components/HigProfileSheet.vue'
 import { Button } from '@/components/ui/button'
+
+const route = useRoute()
+const router = useRouter()
 
 interface Props {
     appName?: string
@@ -90,11 +94,20 @@ const dateStr = computed(() =>
 
 // ── menu bar nav items ──────────────────────────────────────────────────
 const menuItems = [
-    { label: 'Text' },
-    { label: 'Image' },
-    { label: 'Audio' },
-    { label: 'Video' },
+    { label: 'Text', route: '/text' },
+    { label: 'Image', route: null },
+    { label: 'Audio', route: null },
+    { label: 'Video', route: null },
 ]
+
+function isActive(item: (typeof menuItems)[number]) {
+    if (!item.route) return false
+    return route.path === item.route
+}
+
+function handleMenuClick(item: (typeof menuItems)[number]) {
+    if (item.route) router.push(item.route)
+}
 
 // ── Image submenu ───────────────────────────────────────────────────────
 type SubItem = { type: 'item', label: string } | { type: 'separator' }
@@ -267,7 +280,7 @@ onBeforeUnmount(() => {
                         <Button
                             variant="ghost"
                             class="inline-flex h-[22px] cursor-default items-center rounded px-2 text-[13px] text-foreground transition-colors duration-100 hover:bg-[var(--hig-fill)]"
-                            :class="imageMenuOpen && 'bg-[var(--hig-fill)]'"
+                            :class="(imageMenuOpen || isActive(item)) && 'bg-[var(--hig-fill)]'"
                         >
                             Image
                         </Button>
@@ -277,6 +290,8 @@ onBeforeUnmount(() => {
                         v-else
                         variant="ghost"
                         class="inline-flex h-[22px] cursor-default items-center rounded px-2 text-[13px] text-foreground transition-colors duration-100 hover:bg-[var(--hig-fill)]"
+                        :class="isActive(item) && 'bg-[var(--hig-fill)]'"
+                        @click="handleMenuClick(item)"
                     >
                         {{ item.label }}
                     </Button>
